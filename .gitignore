@@ -1,0 +1,8 @@
+.vs
+/FreeImage
+/ImageViewer.old
+bin
+obj
+/research
+*.suo
+*.user

@@ -1,0 +1,18 @@
+﻿Image Viewer 1.0
+
+Commands:
+
+[←]	Previous image
+[→]	Next image
+
+[F]	Toggle fullscreen
+[R]	Rotate 90 degrees clockwise
+[⇧R]	Rotate 90 degrees counter-clockwise
+[T]	Toggle Topmost
+[A]	Toggle autoplay
+[B]	Toggle borderless
+
+[C]	Copy file name
+
+[H]	Show this help screen
+[Q]	Quit
