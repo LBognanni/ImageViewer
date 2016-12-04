@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace ImageViewer2
+namespace ImageViewer
 {
     public partial class frmImageViewer : Form
     {
@@ -313,25 +313,39 @@ namespace ImageViewer2
         /// Cache timer, starts caching when the user is idle.
         /// </summary>
         private Timer pTimerCache = null;
+        private int pLastDirection = 0;
+        private int pCachedCount = 0;
         //private long pLastImageSwitchTicks = 0;
 
         private void UpdateImage(int direction)
         {
+            pLastDirection = direction;
             // Set up timer
             if (pTimerCache == null)
             {
                 pTimerCache = new Timer
                 {
-                    Interval = 100
+                    Interval = 300
                 };
                 pTimerCache.Tick += (sender, args) =>
                 {
-                    int iNext = pIndex + direction;
-                    if (iNext == pFiles.Length)
-                        iNext = 0;
-                    if (iNext < 0)
-                        iNext = pFiles.Length - 1;
-                    pImageBox.CacheImage(pFiles[iNext]);
+                    if (pLastDirection != 0)
+                    {
+                        int iNext = pIndex + pLastDirection;
+                        if (iNext == pFiles.Length)
+                            iNext = 0;
+                        if (iNext < 0)
+                            iNext = pFiles.Length - 1;
+                        pImageBox.CacheImage(pFiles[iNext]);
+                    }
+                    if(pCachedCount >= 3)
+                    {
+                        pTimerCache.Stop();
+                    }
+                    else
+                    {
+                        pCachedCount++;
+                    }
                 };
             }
 
@@ -342,6 +356,7 @@ namespace ImageViewer2
             pImageBox.LoadImage(pFiles[pIndex]);
 
             // Start caching timer 
+            pCachedCount = 0;
             pTimerCache.Start();
 
             /*

@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace ImageViewer2
+namespace ImageViewer
 {
     public class ImageBox : Control
     {
@@ -122,40 +122,48 @@ namespace ImageViewer2
             SetStyle(ControlStyles.OptimizedDoubleBuffer, true);
         }
 
-        private BackgroundWorker _bwCache = null;
+        private InterruptibleBackgroundWorker _bwCache = null;
         private Queue<KeyValuePair<string, FreeImageBitmap>> _cache = new Queue<KeyValuePair<string, FreeImageBitmap>>();
         internal void CacheImage(string fileName)
         {
+            // Move elements that are already cached to the front
+            if (isCached(fileName))
+            {
+                return;
+            }
+
             // Setup backgroundworker
             if(_bwCache == null)
             {
-                _bwCache = new BackgroundWorker();
-                _bwCache.WorkerSupportsCancellation = true;
+                _bwCache = new InterruptibleBackgroundWorker(this);
                 _bwCache.DoWork += (s, e) =>
                 {
                     string fn = e.Argument.ToString();
-                    if (!_cache.Any(c => c.Key == fn))
+                    var bmp = loadBitmap(fn);
+                    e.Result = new Tuple<string, FreeImageBitmap>(fn, bmp);
+                };
+                _bwCache.RunWorkerCompleted += (s, e) =>
+                {
+                    var res = e.Result as Tuple<string, FreeImageBitmap>;
+                    if (res != null)
                     {
-                        var bmp = loadBitmap(fn);
-
-                        if (!_bwCache.CancellationPending)
-                        {
-                            addToCache(fn, bmp);
-                        }
+                        addToCache(res.Item1, res.Item2);
                     }
                 };
             }
             if (_bwCache.IsBusy)
             {
-                _bwCache.CancelAsync();
-                return;
+                _bwCache.Wait();
             }
             _bwCache.RunWorkerAsync(fileName);
         }
 
         private void addToCache(string fileName, FreeImageBitmap bmp)
         {
-            lock(pSyncTk)
+            if (bmp == null)
+                return;
+
+            lock (pSyncTk)
             {
                 if (!_cache.Any(c => c.Key == fileName))
                 {
@@ -164,7 +172,7 @@ namespace ImageViewer2
                     if (_cache.Count > MaximumCachedFiles)
                     {
                         var first = _cache.Dequeue();
-                        first.Value.Dispose();
+                        first.Value?.Dispose();
                     }
                 }
             };
@@ -229,7 +237,7 @@ namespace ImageViewer2
         }
 
 
-        private BackgroundWorker pBwLoadImg = null;
+        private InterruptibleBackgroundWorker pBwLoadImg = null;
 
         private FreeImageBitmap pLoadImageInternal(string fileName)
         {
@@ -280,7 +288,14 @@ namespace ImageViewer2
                         ));
 
                     // Render to bitmap
-                    DisplayBitmap = pImage.ToBitmap();
+                    try
+                    {
+                        var bmp = pImage.ToBitmap();
+                        DisplayBitmap = bmp;
+                    }
+                    catch(Exception ex) {
+                        Console.WriteLine(ex.ToString());
+                    }
                 }
                 // Render the new image
                 Render(true);
@@ -303,7 +318,6 @@ namespace ImageViewer2
                 {
                     pBwLoadImg.CancelAsync();
                     pImage = null;
-                    pBwLoadImg = null;
                 }
             }
 
@@ -330,21 +344,26 @@ namespace ImageViewer2
                         Render(true);
 
                         // Load the image asynchronously
-                        pBwLoadImg = new BackgroundWorker
+                        if (pBwLoadImg == null)
                         {
-                            WorkerSupportsCancellation = true
-                        };
-                        pBwLoadImg.DoWork += (sender, args) => {
-                            args.Result = pLoadImageInternal(fileName);
-                        };
-                        pBwLoadImg.RunWorkerCompleted += (sender, args) =>
-                        {
-                            if ((!args.Cancelled) && (args.Result != null))
+                            pBwLoadImg = new InterruptibleBackgroundWorker(this);
+                            pBwLoadImg.DoWork += (sender, args) =>
                             {
-                                setDisplayImage(args.Result as FreeImageBitmap);
-                            }
-                        };
-                        pBwLoadImg.RunWorkerAsync();
+                                args.Result = pLoadImageInternal(args.Argument.ToString());
+                            };
+                            pBwLoadImg.RunWorkerCompleted += (sender, args) =>
+                            {
+                                if ((!args.Cancelled) && (args.Result != null))
+                                {
+                                    setDisplayImage(args.Result as FreeImageBitmap);
+                                }
+                            };
+                        }
+                        if (pBwLoadImg.IsBusy)
+                        {
+                            pBwLoadImg.CancelAsync();
+                        }
+                        pBwLoadImg.RunWorkerAsync(fileName);
                         return;
                     }
                 }

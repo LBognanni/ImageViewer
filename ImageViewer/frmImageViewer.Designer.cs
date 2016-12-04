@@ -1,4 +1,4 @@
-﻿namespace ImageViewer2
+﻿namespace ImageViewer
 {
     partial class frmImageViewer
     {
@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(frmImageViewer));
-            this.pImageBox = new ImageViewer2.ImageBox();
+            this.pImageBox = new ImageViewer.ImageBox();
             this.SuspendLayout();
             // 
             // pImageBox

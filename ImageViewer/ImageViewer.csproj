@@ -111,6 +111,9 @@
     <Compile Include="ImageBox.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="InterruptibleBackgroundWorker.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="frmImageViewer.resx">
