@@ -6,3 +6,15 @@ obj
 /research
 *.suo
 *.user
+/packages
+*.psess
+*.vsp
+/icon2.ico
+/ico64.png
+/ico48.png
+/ico32.png
+/ico256.png
+/ico24.png
+/ico22.png
+/ico16.png
+/ico128.png

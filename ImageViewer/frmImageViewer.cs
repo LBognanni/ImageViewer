@@ -76,10 +76,37 @@ namespace ImageViewer2
             base.OnShown(e);
             this.Activate();
             this.BringToFront();
-            UpdateImage();
+            UpdateImage(1);
             pImageBox.ShowMessage("Press H for help", 1000);
         }
-        
+
+        private Timer pTimerAutoPlay;
+
+        private void AutoPlay()
+        {
+            if(pTimerAutoPlay == null)
+            {
+                pTimerAutoPlay = new Timer
+                {
+                    Interval = 2000
+                };
+                pTimerAutoPlay.Tick += (s, e) =>
+                {
+                    NextImage();
+                };
+            }
+            if(pTimerAutoPlay.Enabled)
+            {
+                pTimerAutoPlay.Stop();
+                pImageBox.ShowMessage("Autoplay OFF", 900);
+            }
+            else
+            {
+                pTimerAutoPlay.Start();
+                pImageBox.ShowMessage("Autoplay ON", 900);
+            }
+        }
+
         /// <summary>
         /// Hotkeys
         /// </summary>
@@ -106,6 +133,7 @@ namespace ImageViewer2
                 case Keys.R | Keys.Shift:
                     RotateImageInv();
                     return true;
+                    
                 
                 // [F]: Toggle fullscreen
                 case Keys.F:
@@ -126,7 +154,14 @@ namespace ImageViewer2
 
                 // [H]: Show help text
                 case Keys.H:
-                    pImageBox.ShowMessage(Program.GetResource("helptext.txt"), 10000);
+                    if (pImageBox.HasMessage)
+                    {
+                        pImageBox.HideMessage();
+                    }
+                    else
+                    {
+                        pImageBox.ShowMessage(Program.GetResource("helptext.txt"), 10000);
+                    }
                     return true;
                 
                 // [Q]: Quit
@@ -160,7 +195,10 @@ namespace ImageViewer2
                 case Keys.C:
                     Clipboard.SetText(pFiles[pIndex]);
                     return true;
-                    // [A] Toggle autoplay
+                // [A] Toggle autoplay
+                case Keys.A:
+                    AutoPlay();
+                    return true;
             }
 
             return base.ProcessCmdKey(ref msg, keyData);
@@ -260,7 +298,7 @@ namespace ImageViewer2
             pIndex--;
             if (pIndex < 0)
                 pIndex = pFiles.Length - 1;
-            UpdateImage();
+            UpdateImage(-1);
         }
 
         private void NextImage()
@@ -268,21 +306,63 @@ namespace ImageViewer2
             pIndex++;
             if (pIndex >= pFiles.Length)
                 pIndex = 0;
-            UpdateImage();
+            UpdateImage(1);
         }
 
-        private void UpdateImage()
+        /// <summary>
+        /// Cache timer, starts caching when the user is idle.
+        /// </summary>
+        private Timer pTimerCache = null;
+        //private long pLastImageSwitchTicks = 0;
+
+        private void UpdateImage(int direction)
         {
+            // Set up timer
+            if (pTimerCache == null)
+            {
+                pTimerCache = new Timer
+                {
+                    Interval = 100
+                };
+                pTimerCache.Tick += (sender, args) =>
+                {
+                    int iNext = pIndex + direction;
+                    if (iNext == pFiles.Length)
+                        iNext = 0;
+                    if (iNext < 0)
+                        iNext = pFiles.Length - 1;
+                    pImageBox.CacheImage(pFiles[iNext]);
+                };
+            }
+
+            // Stop the cache timer
+            pTimerCache.Stop();
+
             this.Text = string.Format("{0} - Image Viewer", System.IO.Path.GetFileName(pFiles[pIndex]));
             pImageBox.LoadImage(pFiles[pIndex]);
 
-            if (pFiles.Length > 1)
+            // Start caching timer 
+            pTimerCache.Start();
+
+            /*
+            // Stop caching if the user is changing images very quickly
+            const long MINIMUM_WAIT_FOR_CACHE = 200 * TimeSpan.TicksPerMillisecond;
+            long time = DateTime.Now.Ticks;
+            long tDifTicks = 0;
+            if(pLastImageSwitchTicks!=0)
+            {
+                tDifTicks = (time - pLastImageSwitchTicks);
+            }
+            pLastImageSwitchTicks = time;
+
+
+            if ((tDifTicks > MINIMUM_WAIT_FOR_CACHE) && (pFiles.Length > 1))
             {
                 int iNext = pIndex + 1;
                 if (iNext == pFiles.Length)
                     iNext = 0;
                 pImageBox.CacheImage(pFiles[iNext]);
-            }
+            }*/
         }
     }
 }

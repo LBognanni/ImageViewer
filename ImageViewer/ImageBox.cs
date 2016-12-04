@@ -16,11 +16,50 @@ namespace ImageViewer2
 
         private FreeImageBitmap pImage;
         private Bitmap pDisplayBitmap;
+
+        /// <summary>
+        /// Bitmap to display on screen.
+        /// Makes sure to dispose the old bitmap when assigning a new one
+        /// </summary>
+        protected Bitmap DisplayBitmap
+        {
+            get
+            {
+                return pDisplayBitmap;
+            }
+            set
+            {
+                // Dispose the old bitmap
+                if (pDisplayBitmap != null)
+                {
+                    pDisplayBitmap.Dispose();
+                }
+                pDisplayBitmap = value;
+
+                // Save display bitmap width and height
+                if (value == null)
+                {
+                    pDisplayBitmapWidth = 0;
+                    pDisplayBitmapHeight = 0;
+                }
+                else
+                {
+                    pDisplayBitmapWidth = value.Width;
+                    pDisplayBitmapHeight = value.Height;
+                }
+            }
+        }
+
+        private int pDisplayBitmapWidth = 0;
+        private int pDisplayBitmapHeight = 0;
         private Point pPan = new Point(0, 0);
         Brush pBackgroundBrush = Brushes.Black;
 
+        public int MaximumCachedFiles { get; set; }
+
         public ImageBox()
         {
+            MaximumCachedFiles = 5;
         }
 
         protected override void OnResize(EventArgs e)
@@ -66,7 +105,7 @@ namespace ImageViewer2
         {
             using (var img = pImage.GetRotatedInstance(pRotation))
             {
-                pDisplayBitmap = img.ToBitmap();
+                DisplayBitmap = img.ToBitmap();
                 Invalidate();
             }
         }
@@ -116,13 +155,13 @@ namespace ImageViewer2
 
         private void addToCache(string fileName, FreeImageBitmap bmp)
         {
-            lock(_cache)
+            lock(pSyncTk)
             {
                 if (!_cache.Any(c => c.Key == fileName))
                 {
                     _cache.Enqueue(new KeyValuePair<string, FreeImageBitmap>(fileName, bmp));
 
-                    if (_cache.Count > 3)
+                    if (_cache.Count > MaximumCachedFiles)
                     {
                         var first = _cache.Dequeue();
                         first.Value.Dispose();
@@ -133,15 +172,19 @@ namespace ImageViewer2
 
         private FreeImageBitmap findInCache(string fileName)
         {
-            var els = _cache.Where(e => e.Key == fileName);
-            if (els.Any())
-            {
-                return els.First().Value;
-            }
-            else
-            {
+            var el = _cache.FirstOrDefault(e => e.Key == fileName);
+
+            // Return null if not found
+            if ((object)el == null)
                 return null;
-            }
+
+            // return element
+            return el.Value;
+        }
+
+        private bool isCached(string fileName)
+        {
+            return _cache.Any(el => el.Key == fileName);
         }
 
         /// <summary>
@@ -162,7 +205,7 @@ namespace ImageViewer2
             if (fileName.EndsWith("jpg", StringComparison.OrdinalIgnoreCase) || fileName.EndsWith("jpeg", StringComparison.OrdinalIgnoreCase))
             {
                 //flags = FREE_IMAGE_LOAD_FLAGS.JPEG_EXIFROTATE;
-                flags = FREE_IMAGE_LOAD_FLAGS.JPEG_FAST | FREE_IMAGE_LOAD_FLAGS.JPEG_EXIFROTATE;
+                flags = FREE_IMAGE_LOAD_FLAGS.JPEG_ACCURATE | FREE_IMAGE_LOAD_FLAGS.JPEG_EXIFROTATE;
             }
 
             // Load the image from disk
@@ -185,66 +228,134 @@ namespace ImageViewer2
             }
         }
 
+
+        private BackgroundWorker pBwLoadImg = null;
+
+        private FreeImageBitmap pLoadImageInternal(string fileName)
+        {
+            lock (pSyncTk)
+            {
+                FreeImageBitmap fBmp = loadBitmap(fileName);
+
+                // Dispose previous image
+
+                if ((pImage != null) && (!Object.ReferenceEquals(pImage, fBmp)))
+                {
+                    if (!_cache.Any(c => Object.ReferenceEquals(c.Value, pImage)))
+                    {
+                        pImage.Dispose();
+                    }
+                }
+
+                return fBmp;
+            }
+        }
+
+        private object pSyncTk = new object();
+
+        private void setDisplayImage(FreeImageBitmap fBmp)
+        {
+            lock (pSyncTk)
+            {
+                pImage = fBmp;
+                if ((pImage != null) && (!pImage.IsDisposed))
+                {
+                    // Choose the background color as an average of a few points of the picture
+                    var colors = new[]
+                    {
+                        pImage.GetPixel(0,0),
+                        pImage.GetPixel(0,pImage.Height-1),
+                        pImage.GetPixel(pImage.Width-1,0),
+                        pImage.GetPixel(pImage.Width-1,pImage.Height-1),
+                        pImage.GetPixel(pImage.Width/2,0),
+                        pImage.GetPixel(0,pImage.Height/2),
+                        pImage.GetPixel(pImage.Width/2,pImage.Height-1),
+                        pImage.GetPixel(pImage.Width-1,pImage.Height/2),
+                    };
+
+                    pBackgroundBrush = new SolidBrush(Color.FromArgb(
+                        (int)colors.Average(c => c.R),
+                        (int)colors.Average(c => c.G),
+                        (int)colors.Average(c => c.B)
+                        ));
+
+                    // Render to bitmap
+                    DisplayBitmap = pImage.ToBitmap();
+                }
+                // Render the new image
+                Render(true);
+            }
+        }
+
         /// <summary>
         /// Load and display an image
         /// </summary>
         /// <param name="fileName"></param>
         public void LoadImage(string fileName)
         {
-            /*
-            // Load the bitmap asynchronously
-            FreeImageBitmap fBmp = await new Task<FreeImageBitmap>(() =>
-            {
-                return loadBitmap(fileName);
-            });
-            */
-            FreeImageBitmap fBmp = loadBitmap(fileName);
+            if (fileName == null)
+                return;
 
-            // Dispose previous image
-            if ((pImage != null) && (!Object.ReferenceEquals(pImage, fBmp)))
+            // Stop any async image loading
+            if (pBwLoadImg != null)
             {
-                if (!_cache.Any(c => Object.ReferenceEquals(c.Value, pImage)))
+                if (pBwLoadImg.IsBusy)
                 {
-                    pImage.Dispose();
+                    pBwLoadImg.CancelAsync();
+                    pImage = null;
+                    pBwLoadImg = null;
                 }
             }
-            pImage = fBmp;
 
-            // Dispose the old bitmap
-            if (pDisplayBitmap != null)
+            if (!isCached(fileName))
             {
-                pDisplayBitmap.Dispose();
-                pDisplayBitmap = null;
-            }
-
-            if (pImage != null)
-            {
-                // Choose the background color as an average of a few points of the picture
-                var colors = new[]
+                // Can we use a thumbnail and load asynchronously?
+                // using the Windows API code pack
+                // PM> Install -Package WindowsAPICodePack-Shell
+                using (Microsoft.WindowsAPICodePack.Shell.ShellFile file = Microsoft.WindowsAPICodePack.Shell.ShellFile.FromFilePath(fileName))
                 {
-                    fBmp.GetPixel(0,0),
-                    fBmp.GetPixel(0,fBmp.Height-1),
-                    fBmp.GetPixel(fBmp.Width-1,0),
-                    fBmp.GetPixel(fBmp.Width-1,fBmp.Height-1),
-                    fBmp.GetPixel(fBmp.Width/2,0),
-                    fBmp.GetPixel(0,fBmp.Height/2),
-                    fBmp.GetPixel(fBmp.Width/2,fBmp.Height-1),
-                    fBmp.GetPixel(fBmp.Width-1,fBmp.Height/2),
-                };
-                pBackgroundBrush = new SolidBrush(Color.FromArgb(
-                    (int)colors.Average(c => c.R),
-                    (int)colors.Average(c => c.G),
-                    (int)colors.Average(c => c.B)
-                    ));
+                    if (file.Thumbnail.ExtraLargeBitmap != null)
+                    {
+                        uint
+                            w = file.Properties.System?.Image?.HorizontalSize?.Value ?? 0,
+                            h = file.Properties.System?.Image?.VerticalSize?.Value ?? 0;
 
-                // Render to bitmap
-                pDisplayBitmap = fBmp.ToBitmap();
+                        // Display the thumbnail
+                        DisplayBitmap = file.Thumbnail.ExtraLargeBitmap;
+                        if (w != 0 && h != 0)
+                        {
+                            pDisplayBitmapWidth = (int)w;
+                            pDisplayBitmapHeight = (int)h;
+                        }
+                        Render(true);
+
+                        // Load the image asynchronously
+                        pBwLoadImg = new BackgroundWorker
+                        {
+                            WorkerSupportsCancellation = true
+                        };
+                        pBwLoadImg.DoWork += (sender, args) => {
+                            args.Result = pLoadImageInternal(fileName);
+                        };
+                        pBwLoadImg.RunWorkerCompleted += (sender, args) =>
+                        {
+                            if ((!args.Cancelled) && (args.Result != null))
+                            {
+                                setDisplayImage(args.Result as FreeImageBitmap);
+                            }
+                        };
+                        pBwLoadImg.RunWorkerAsync();
+                        return;
+                    }
+                }
             }
 
-            // Render the new image
-            Render(true);
+            // Load the image synchronously (from cache or if a suitable thumbnail was not found)
+            setDisplayImage(pLoadImageInternal(fileName));
+
         }
 
+        // ----------------- Rendering ------------------
 
         /// <summary>
         /// Just call Invalidate...
@@ -272,29 +383,29 @@ namespace ImageViewer2
             // Black background
             g.FillRectangle(pBackgroundBrush, this.ClientRectangle);
 
-            if (pDisplayBitmap != null)
+            if (DisplayBitmap != null)
             {
                 if (tZoom == 0)
                 {
                     // "Best fit"
-                    if ((pDisplayBitmap.Width < this.Width) && (pDisplayBitmap.Height < this.Height))
+                    if ((pDisplayBitmapWidth < this.Width) && (pDisplayBitmapHeight < this.Height))
                     {
                         tZoom = 1;
                     }
                     else
                     {
-                        decimal propW = (decimal)this.Width / (decimal)pDisplayBitmap.Width;
-                        decimal propH = (decimal)this.Height / (decimal)pDisplayBitmap.Height;
+                        decimal propW = (decimal)this.Width / (decimal)pDisplayBitmapWidth;
+                        decimal propH = (decimal)this.Height / (decimal)pDisplayBitmapHeight;
                         tZoom = Math.Min(propW, propH);
                     }
                 }
 
-                int newWidth = (int)((decimal)pDisplayBitmap.Width * tZoom);
-                int newHeight = (int)((decimal)pDisplayBitmap.Height * tZoom);
+                int newWidth = (int)((decimal)pDisplayBitmapWidth * tZoom);
+                int newHeight = (int)((decimal)pDisplayBitmapHeight * tZoom);
 
                 Point pos = new Point((this.Width / 2 - (newWidth / 2)) + pPan.X, (this.Height / 2 - (newHeight / 2)) + pPan.Y);
 
-                g.DrawImage(pDisplayBitmap, pos.X, pos.Y, newWidth, newHeight);
+                g.DrawImage(DisplayBitmap, pos.X, pos.Y, newWidth, newHeight);
             }
 
             // Draw the message
@@ -322,10 +433,12 @@ namespace ImageViewer2
 
         protected override void OnPaintBackground(PaintEventArgs pevent)
         {
+            // Prevent background painting.
             //base.OnPaintBackground(pevent);
         }
         protected override void OnPaint(PaintEventArgs e)
         {
+            // Render
             Render(e.Graphics);
         }
 
@@ -363,11 +476,35 @@ namespace ImageViewer2
             base.OnMouseUp(e);
         }
 
-        private Timer pTimer = null;
+
+        // -------------- Text message UI ----------------
+
+        private Timer pMessageTimer = null;
         private float pMessageAlpha;
         private string pMessageText;
         private bool pMessageFadingIn = false;
         private int pTimerInterval = 0;
+        private const int MESSAGE_FADE_INTERVAL = 50;
+        private const float MESSAGE_FADE_AMOUNT = 0.2f;
+
+        public bool HasMessage
+        {
+            get
+            {
+                return !string.IsNullOrEmpty(pMessageText);
+            }
+        }
+
+        public void HideMessage()
+        {
+            if(pMessageTimer!= null)
+            {
+                pMessageTimer.Stop();
+                pMessageFadingIn = false;
+                pMessageTimer.Interval = MESSAGE_FADE_INTERVAL;
+                pMessageTimer.Start();
+            }
+        }
 
         public void ShowMessage(string msg, int timeoutMS)
         {
@@ -375,44 +512,44 @@ namespace ImageViewer2
             pMessageAlpha = 0;
             pMessageFadingIn = true;
 
-            pTimer = new Timer();
-            pTimer.Tick += PTimer_Tick;
+            pMessageTimer = new Timer();
+            pMessageTimer.Tick += pMessageTimer_Tick;
             pTimerInterval = timeoutMS;
-            pTimer.Interval = 50;
-            pTimer.Start();
+            pMessageTimer.Interval = MESSAGE_FADE_INTERVAL;
+            pMessageTimer.Start();
         }
 
-        private void PTimer_Tick(object sender, EventArgs e)
+        private void pMessageTimer_Tick(object sender, EventArgs e)
         {
 
             if (pMessageFadingIn)
             {
-                pMessageAlpha += 0.2f;
+                pMessageAlpha += MESSAGE_FADE_AMOUNT;
 
                 if (pMessageAlpha >= 1)
                 {
                     pMessageAlpha = 1;
-                    pTimer.Stop();
-                    pTimer.Interval = pTimerInterval;
+                    pMessageTimer.Stop();
+                    pMessageTimer.Interval = pTimerInterval;
                     pMessageFadingIn = false;
-                    pTimer.Start();
+                    pMessageTimer.Start();
                 }
             }
             else
             {
-                if (pTimer.Interval != 50)
+                if (pMessageTimer.Interval != MESSAGE_FADE_INTERVAL)
                 {
-                    pTimer.Stop();
-                    pTimer.Interval = 50;
-                    pTimer.Start();
+                    pMessageTimer.Stop();
+                    pMessageTimer.Interval = MESSAGE_FADE_INTERVAL;
+                    pMessageTimer.Start();
                 }
 
-                pMessageAlpha -= 0.2f;
+                pMessageAlpha -= MESSAGE_FADE_AMOUNT;
 
                 if (pMessageAlpha <= 0)
                 {
                     pMessageText = "";
-                    pTimer.Stop();
+                    pMessageTimer.Stop();
                 }
             }
             Invalidate();
