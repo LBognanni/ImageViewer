@@ -29,19 +29,21 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(frmImageViewer));
-            this.pImageBox = new ImageViewer.ImageBox();
+            this.ImageBox = new ImageViewer.ImageBox();
             this.SuspendLayout();
             // 
             // pImageBox
             // 
-            this.pImageBox.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pImageBox.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.pImageBox.Location = new System.Drawing.Point(0, 0);
-            this.pImageBox.Name = "pImageBox";
-            this.pImageBox.Size = new System.Drawing.Size(978, 680);
-            this.pImageBox.TabIndex = 0;
-            this.pImageBox.Text = "imageBox1";
-            this.pImageBox.Zoom = new decimal(new int[] {
+            this.ImageBox.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.ImageBox.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.ImageBox.Location = new System.Drawing.Point(0, 0);
+            this.ImageBox.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.ImageBox.MaximumCachedFiles = 5;
+            this.ImageBox.Name = "pImageBox";
+            this.ImageBox.Size = new System.Drawing.Size(1304, 837);
+            this.ImageBox.TabIndex = 0;
+            this.ImageBox.Text = "imageBox1";
+            this.ImageBox.Zoom = new decimal(new int[] {
             0,
             0,
             0,
@@ -49,11 +51,12 @@
             // 
             // frmImageViewer
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(978, 680);
-            this.Controls.Add(this.pImageBox);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(120F, 120F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
+            this.ClientSize = new System.Drawing.Size(1304, 837);
+            this.Controls.Add(this.ImageBox);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.Name = "frmImageViewer";
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Text = "Form1";
@@ -64,7 +67,7 @@
 
         #endregion
 
-        private ImageBox pImageBox;
+        private ImageBox ImageBox;
     }
 }
 

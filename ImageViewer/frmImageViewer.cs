@@ -16,28 +16,30 @@ namespace ImageViewer
         /// <summary>
         /// Current directory
         /// </summary>
-        private string pDirectoryName;
+        private string _directoryName;
 
         /// <summary>
         /// List of files in the current directory
         /// </summary>
-        private string[] pFiles;
+        private string[] _files;
 
         /// <summary>
         /// Current file
         /// </summary>
-        private int pIndex;
+        private int _fileIndex;
+
+        private string currentFile => _files[_fileIndex];
 
         public frmImageViewer(string fileName)
         {
             InitializeComponent();
-            pImageBox.DoubleClick += PImageBox_DoubleClick;
+            ImageBox.DoubleClick += ImageBox_DoubleClick;
 
             //this.KeyPreview = true;
             LoadImage(fileName);
         }
 
-        private void PImageBox_DoubleClick(object sender, EventArgs e)
+        private void ImageBox_DoubleClick(object sender, EventArgs e)
         {
             ToggleFullScreen();
         }
@@ -48,19 +50,19 @@ namespace ImageViewer
         /// <param name="fileName"></param>
         protected void LoadImage(string fileName)
         {
-            pDirectoryName = System.IO.Path.GetDirectoryName(fileName);
+            _directoryName = System.IO.Path.GetDirectoryName(fileName);
 
             // Find all the images in the same directory as fileName
-            pFiles = Program.Extensions.SelectMany(ext =>
-                        System.IO.Directory.GetFiles(pDirectoryName, ext))
+            _files = Program.Extensions.SelectMany(ext =>
+                        System.IO.Directory.GetFiles(_directoryName, ext))
                         .OrderBy(f => f, StringComparer.CurrentCultureIgnoreCase).ToArray();
 
             // Find the index of fileName in pFiles
-            for (int i = 0; i < pFiles.Length; ++i)
+            for (int i = 0; i < _files.Length; ++i)
             {
-                if (pFiles[i].Equals(fileName, StringComparison.CurrentCultureIgnoreCase))
+                if (_files[i].Equals(fileName, StringComparison.OrdinalIgnoreCase))
                 {
-                    pIndex = i;
+                    _fileIndex = i;
                     break;
                 }
             }
@@ -70,40 +72,39 @@ namespace ImageViewer
         /// On first shown, focus the window.
         /// Could be unfocused if an OpenFileDialog was first opened.
         /// </summary>
-        /// <param name="e"></param>
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
             this.Activate();
             this.BringToFront();
             UpdateImage(1);
-            pImageBox.ShowMessage("Press H for help", 1000);
+            ImageBox.ShowMessage("Press H for help", 1000);
         }
 
-        private Timer pTimerAutoPlay;
+        private Timer _autoPlayTimer;
 
         private void AutoPlay()
         {
-            if(pTimerAutoPlay == null)
+            if(_autoPlayTimer == null)
             {
-                pTimerAutoPlay = new Timer
+                _autoPlayTimer = new Timer
                 {
                     Interval = 2000
                 };
-                pTimerAutoPlay.Tick += (s, e) =>
+                _autoPlayTimer.Tick += (s, e) =>
                 {
                     NextImage();
                 };
             }
-            if(pTimerAutoPlay.Enabled)
+            if(_autoPlayTimer.Enabled)
             {
-                pTimerAutoPlay.Stop();
-                pImageBox.ShowMessage("Autoplay OFF", 900);
+                _autoPlayTimer.Stop();
+                ImageBox.ShowMessage("Autoplay OFF", 900);
             }
             else
             {
-                pTimerAutoPlay.Start();
-                pImageBox.ShowMessage("Autoplay ON", 900);
+                _autoPlayTimer.Start();
+                ImageBox.ShowMessage("Autoplay ON", 900);
             }
         }
 
@@ -154,13 +155,13 @@ namespace ImageViewer
 
                 // [H]: Show help text
                 case Keys.H:
-                    if (pImageBox.HasMessage)
+                    if (ImageBox.HasMessage)
                     {
-                        pImageBox.HideMessage();
+                        ImageBox.HideMessage();
                     }
                     else
                     {
-                        pImageBox.ShowMessage(Program.GetResource("helptext.txt"), 10000);
+                        ImageBox.ShowMessage(Program.GetResource("helptext.txt"), 10000);
                     }
                     return true;
                 
@@ -176,14 +177,14 @@ namespace ImageViewer
 
                 // 1 : Switch between 100% and best fit
                 case Keys.D1:
-                    if(pImageBox.Zoom != 1)
+                    if(ImageBox.Zoom != 1)
                     {
-                        pImageBox.Zoom = 1;
+                        ImageBox.Zoom = 1;
                     }
                     else
                     {
-                        pImageBox.Zoom = 0;
-                        pImageBox.ResetTransform();
+                        ImageBox.Zoom = 0;
+                        ImageBox.ResetTransform();
                     }
                     return true;
                 // [B]	Toggle borderless
@@ -193,7 +194,7 @@ namespace ImageViewer
 
                 // [C]	Copy file name
                 case Keys.C:
-                    Clipboard.SetText(pFiles[pIndex]);
+                    Clipboard.SetText(currentFile);
                     return true;
                 // [A] Toggle autoplay
                 case Keys.A:
@@ -285,27 +286,27 @@ namespace ImageViewer
 
         private void RotateImageInv()
         {
-            pImageBox.Rotation += 90;
+            ImageBox.Rotation += 90;
         }
 
         private void RotateImage()
         {
-            pImageBox.Rotation -= 90;
+            ImageBox.Rotation -= 90;
         }
 
         private void PreviousImage()
         {
-            pIndex--;
-            if (pIndex < 0)
-                pIndex = pFiles.Length - 1;
+            _fileIndex--;
+            if (_fileIndex < 0)
+                _fileIndex = _files.Length - 1;
             UpdateImage(-1);
         }
 
         private void NextImage()
         {
-            pIndex++;
-            if (pIndex >= pFiles.Length)
-                pIndex = 0;
+            _fileIndex++;
+            if (_fileIndex >= _files.Length)
+                _fileIndex = 0;
             UpdateImage(1);
         }
 
@@ -331,12 +332,12 @@ namespace ImageViewer
                 {
                     if (pLastDirection != 0)
                     {
-                        int iNext = pIndex + pLastDirection;
-                        if (iNext == pFiles.Length)
+                        int iNext = _fileIndex + pLastDirection;
+                        if (iNext == _files.Length)
                             iNext = 0;
                         if (iNext < 0)
-                            iNext = pFiles.Length - 1;
-                        pImageBox.CacheImage(pFiles[iNext]);
+                            iNext = _files.Length - 1;
+                        //pImageBox.CacheImage(pFiles[iNext]);
                     }
                     if(pCachedCount >= 3)
                     {
@@ -352,8 +353,8 @@ namespace ImageViewer
             // Stop the cache timer
             pTimerCache.Stop();
 
-            this.Text = string.Format("{0} - Image Viewer", System.IO.Path.GetFileName(pFiles[pIndex]));
-            pImageBox.LoadImage(pFiles[pIndex]);
+            this.Text = string.Format("{0} - Image Viewer", System.IO.Path.GetFileName(currentFile));
+            ImageBox.LoadImage(currentFile);
 
             // Start caching timer 
             pCachedCount = 0;
