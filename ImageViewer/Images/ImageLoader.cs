@@ -2,6 +2,7 @@
 using FreeImageAPI;
 using System.Drawing;
 using System.Linq;
+using System.Diagnostics;
 
 namespace ImageViewer
 {
@@ -10,7 +11,7 @@ namespace ImageViewer
         public ImageMeta LoadImage(string fileName)
         {
             var bmp = LoadBitmap(fileName);
-            Console.WriteLine("Slow done!");
+            Debug.WriteLine("Slow done!");
             return new ImageMeta
             {
                 Image = bmp?.ToBitmap(),
@@ -84,6 +85,7 @@ namespace ImageViewer
             }
             catch
             {
+                throw;
                 return null;
             }
         }

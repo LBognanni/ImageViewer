@@ -73,7 +73,7 @@ namespace ImageViewer
             SetStyle(ControlStyles.OptimizedDoubleBuffer, true);
         }
 
-        public async Task LoadImage(string fileName)
+        public void LoadImage(string fileName)
         {
             if (fileName == null)
                 return;

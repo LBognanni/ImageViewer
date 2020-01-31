@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -39,12 +40,12 @@ namespace ImageViewer
             var firstTask = await Task.WhenAny(slowTask, fastTask).ConfigureAwait(false);
             if (firstTask == fastTask)
             {
-                Console.WriteLine("fast was faster");
+                Debug.WriteLine("fast was faster");
                 ThreadPool.QueueUserWorkItem(state => ReplaceImage(fileName, slowTask.Result));
             }
             else
             {
-                Console.WriteLine("slow was faster");
+                Debug.WriteLine("slow was faster");
             }
             var img = await firstTask.ConfigureAwait(false);
 
