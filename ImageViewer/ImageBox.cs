@@ -17,12 +17,17 @@ namespace ImageViewer
         private Point _pan = new Point(0, 0);
         Brush _backgroundBrush = Brushes.Black;
         private TwoStepImageCache _cache;
+        private string _optimizedImageFileName;
+        private ImageMeta _image;
+        private Bitmap _optimizedScreenSizeImage;
+        private TextRenderer _messageRenderer;
 
         public int MaximumCachedFiles { get; set; }
 
         public ImageBox()
         {
             _cache = new TwoStepImageCache(new ImageLoader(), new QuickImageLoader(), this, 5);
+            _messageRenderer = new TextRenderer(this);
         }
 
         protected override void OnResize(EventArgs e)
@@ -112,6 +117,16 @@ namespace ImageViewer
 
             if (_image != null)
             {
+                Bitmap imageToPaint = _image.Image;
+
+                //if(!string.IsNullOrEmpty(pMessageText))
+                //{
+                //    g.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighSpeed;
+                //    g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Low;
+                //    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighSpeed;
+                //    g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighSpeed;
+                //}
+
                 var (w, h) = rotation switch
                 {
                     0 => (_image.ActualWidth, _image.ActualHeight),
@@ -119,6 +134,7 @@ namespace ImageViewer
                     _ => (_image.ActualHeight, _image.ActualWidth),
                 };
 
+                bool useOptimizedImage = false;
                 if (zoom == 0)
                 {
                     // "Best fit"
@@ -130,45 +146,46 @@ namespace ImageViewer
                     {
                         decimal propW = (decimal)this.Width / (decimal)w;
                         decimal propH = (decimal)this.Height / (decimal)h;
+
                         zoom = Math.Min(propW, propH);
+                        useOptimizedImage = true;
                     }
                 }
 
                 int newWidth = (int)((decimal)_image.ActualWidth * zoom);
                 int newHeight = (int)((decimal)_image.ActualHeight * zoom);
 
-                if (_image?.Image != null)
+                if (useOptimizedImage)
+                {
+                    if (_optimizedImageFileName != FileName)
+                    {
+                        if (_optimizedScreenSizeImage != null)
+                        {
+                            _optimizedScreenSizeImage.Dispose();
+                        }
+                        _optimizedScreenSizeImage = new Bitmap(_image.Image, new Size(newWidth, newHeight));
+                        imageToPaint = _optimizedScreenSizeImage;
+                        _optimizedImageFileName = FileName;
+                    }
+                    else if (_optimizedScreenSizeImage != null)
+                    {
+                        imageToPaint = _optimizedScreenSizeImage;
+                    }
+                }
+
+                if (imageToPaint != null)
                 {
                     g.TranslateTransform(this.Width / 2, this.Height / 2);
                     g.TranslateTransform(_pan.X, _pan.Y);
                     g.RotateTransform(rotation);
                     g.TranslateTransform(-(newWidth / 2), -(newHeight / 2));
-                    g.DrawImage(_image.Image, 0, 0, newWidth, newHeight);
+                    g.DrawImage(imageToPaint, 0, 0, newWidth, newHeight);
                     g.ResetTransform();
                 }
             }
 
             // Draw the message
-            if(!string.IsNullOrEmpty(pMessageText))
-            {
-                var strSize = g.MeasureString(pMessageText, this.Font);
-                var textCenter = new RectangleF(
-                        (this.Width / 2) - (strSize.Width / 2) - 20,
-                        (this.Height - strSize.Height - 60),
-                        strSize.Width + 40,
-                        strSize.Height + 40
-                    );
-
-                using (SolidBrush black = new SolidBrush(Color.FromArgb((int)(pMessageAlpha * 200.0f), 0, 0, 0)))
-                {
-                    g.FillRectangle(black, textCenter);
-                }
-
-                using (SolidBrush white = new SolidBrush(Color.FromArgb((int)(pMessageAlpha * 255.0f), 255, 255, 255)))
-                {
-                    g.DrawString(pMessageText, this.Font, white, textCenter.Left + 20, textCenter.Top + 20);
-                }
-            }
+            _messageRenderer.Render(g);
         }
 
         protected override void OnPaintBackground(PaintEventArgs pevent)
@@ -176,6 +193,7 @@ namespace ImageViewer
             // Prevent background painting.
             //base.OnPaintBackground(pevent);
         }
+
         protected override void OnPaint(PaintEventArgs e)
         {
             // Render
@@ -218,85 +236,6 @@ namespace ImageViewer
 
 
         // -------------- Text message UI ----------------
-
-        private Timer pMessageTimer = null;
-        private float pMessageAlpha;
-        private string pMessageText;
-        private bool pMessageFadingIn = false;
-        private int pTimerInterval = 0;
-        private ImageMeta _image;
-
-        private const int MESSAGE_FADE_INTERVAL = 50;
-        private const float MESSAGE_FADE_AMOUNT = 0.2f;
-
-        public bool HasMessage
-        {
-            get
-            {
-                return !string.IsNullOrEmpty(pMessageText);
-            }
-        }
-
-        public void HideMessage()
-        {
-            if(pMessageTimer!= null)
-            {
-                pMessageTimer.Stop();
-                pMessageFadingIn = false;
-                pMessageTimer.Interval = MESSAGE_FADE_INTERVAL;
-                pMessageTimer.Start();
-            }
-        }
-
-        public void ShowMessage(string msg, int timeoutMS)
-        {
-            pMessageText = msg;
-            pMessageAlpha = 0;
-            pMessageFadingIn = true;
-
-            pMessageTimer = new Timer();
-            pMessageTimer.Tick += pMessageTimer_Tick;
-            pTimerInterval = timeoutMS;
-            pMessageTimer.Interval = MESSAGE_FADE_INTERVAL;
-            pMessageTimer.Start();
-        }
-
-        private void pMessageTimer_Tick(object sender, EventArgs e)
-        {
-
-            if (pMessageFadingIn)
-            {
-                pMessageAlpha += MESSAGE_FADE_AMOUNT;
-
-                if (pMessageAlpha >= 1)
-                {
-                    pMessageAlpha = 1;
-                    pMessageTimer.Stop();
-                    pMessageTimer.Interval = pTimerInterval;
-                    pMessageFadingIn = false;
-                    pMessageTimer.Start();
-                }
-            }
-            else
-            {
-                if (pMessageTimer.Interval != MESSAGE_FADE_INTERVAL)
-                {
-                    pMessageTimer.Stop();
-                    pMessageTimer.Interval = MESSAGE_FADE_INTERVAL;
-                    pMessageTimer.Start();
-                }
-
-                pMessageAlpha -= MESSAGE_FADE_AMOUNT;
-
-                if (pMessageAlpha <= 0)
-                {
-                    pMessageText = "";
-                    pMessageTimer.Stop();
-                }
-            }
-            Invalidate();
-        }
-
         public void ReceiveImage(ImageMeta img)
         {
             SetImage(img);
@@ -310,6 +249,7 @@ namespace ImageViewer
             _image = img;
             _backgroundBrush.Dispose();
             _backgroundBrush = new SolidBrush(img.AverageColor);
+            _optimizedImageFileName = "";
             Render(true);
         }
     }
