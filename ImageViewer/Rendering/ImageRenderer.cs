@@ -83,15 +83,22 @@ namespace ImageViewer.Rendering
         {
             if ((_optimizedImageFileName != image.FileName) || (_optimizedImageRotation != _control.Rotation))
             {
-                if (_optimizedScreenSizeImage != null)
-                {
-                    _optimizedScreenSizeImage.Dispose();
-                }
+                InvalidateCache();
                 _optimizedScreenSizeImage = new Bitmap(image.Image, newWidth, newHeight);
                 _optimizedImageFileName = image.FileName;
                 _optimizedImageRotation = _control.Rotation;
             }
             return _optimizedScreenSizeImage;
+        }
+
+        internal void InvalidateCache()
+        {
+            if(_optimizedScreenSizeImage!=null)
+            {
+                _optimizedScreenSizeImage.Dispose();
+                _optimizedScreenSizeImage = null;
+                _optimizedImageFileName = "";
+            }
         }
     }
 }

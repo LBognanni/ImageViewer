@@ -1,20 +1,12 @@
-﻿using FreeImageAPI;
-using ImageViewer.Rendering;
+﻿using ImageViewer.Rendering;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace ImageViewer
 {
     public class ImageBox : Control, IReceiveImage, IRenderControl
     {
-        public string FileName { get; set; }
-
         public Point Pan { get; set; } = new Point(0, 0);
         Brush _backgroundBrush = Brushes.Black;
         
@@ -89,7 +81,6 @@ namespace ImageViewer
             if (fileName == null)
                 return;
 
-            FileName = fileName;
             SetImage(_cache.GetOrLoadImage(fileName));
         }
 
@@ -157,20 +148,19 @@ namespace ImageViewer
 
         public void ReceiveImage(ImageMeta img)
         {
+            _imageRenderer.InvalidateCache();
             SetImage(img);
         }
 
         private void SetImage(ImageMeta img)
         {
-            if (img.FileName != FileName)
-                return;
-
             _image = img;
             _backgroundBrush.Dispose();
             _backgroundBrush = new SolidBrush(img.AverageColor);
             _zoom = 0;
             Pan = new Point(0, 0);
             _rotation = 0;
+            Invalidate();
         }
     }
 }
