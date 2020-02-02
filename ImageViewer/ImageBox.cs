@@ -1,4 +1,5 @@
 ﻿using FreeImageAPI;
+using ImageViewer.Rendering;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -10,65 +11,23 @@ using System.Windows.Forms;
 
 namespace ImageViewer
 {
-    public class ImageBox : Control, IReceiveImage
+    public class ImageBox : Control, IReceiveImage, IRenderControl
     {
         public string FileName { get; set; }
 
-        private Point _pan = new Point(0, 0);
+        public Point Pan { get; set; } = new Point(0, 0);
         Brush _backgroundBrush = Brushes.Black;
+        
         private TwoStepImageCache _cache;
-        private string _optimizedImageFileName;
+        private MessageRenderer _messageRenderer;
+        private ImageRenderer _imageRenderer;
         private ImageMeta _image;
-        private Bitmap _optimizedScreenSizeImage;
-        private TextRenderer _messageRenderer;
-
-        public int MaximumCachedFiles { get; set; }
 
         public ImageBox()
         {
             _cache = new TwoStepImageCache(new ImageLoader(), new QuickImageLoader(), this, 5);
-            _messageRenderer = new TextRenderer(this);
-        }
-
-        protected override void OnResize(EventArgs e)
-        {
-            base.OnResize(e);
-            Invalidate();
-        }
-
-        private decimal zoom = 0;
-        public decimal Zoom
-        {
-            get => zoom;
-            set
-            {
-                zoom = value;
-                Invalidate();
-            }
-        }
-
-        private int rotation = 0;
-        public int Rotation
-        {
-            get => rotation;
-            internal set
-            {
-                rotation = value;
-                while (rotation >= 360)
-                {
-                    rotation -= 360;
-                }
-                while(rotation<0)
-                {
-                    rotation += 360;
-                }
-                Invalidate();
-            }
-        }
-
-        public void ResetTransform()
-        {
-            _pan = new Point(0, 0);
+            _messageRenderer = new MessageRenderer(this);
+            _imageRenderer = new ImageRenderer(this);
         }
 
         protected override void OnHandleCreated(EventArgs e)
@@ -78,6 +37,53 @@ namespace ImageViewer
             SetStyle(ControlStyles.OptimizedDoubleBuffer, true);
         }
 
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+            Invalidate();
+        }
+
+        public void ShowMessage(string s, int timeoutMS) => _messageRenderer.ShowMessage(s, timeoutMS);
+        public bool HasMessage => _messageRenderer.HasMessage;
+        public void HideMessage() => _messageRenderer.HideMessage();
+
+        private decimal _zoom = 0;
+        public decimal Zoom
+        {
+            get => _zoom;
+            set
+            {
+                _zoom = value;
+                Invalidate();
+            }
+        }
+
+        private int _rotation = 0;
+        public int Rotation
+        {
+            get => _rotation;
+            internal set
+            {
+                _rotation = value;
+                while (_rotation >= 360)
+                {
+                    _rotation -= 360;
+                }
+                while(_rotation<0)
+                {
+                    _rotation += 360;
+                }
+                Invalidate();
+            }
+        }
+
+
+        public void ResetTransform()
+        {
+            Pan = new Point(0, 0);
+        }
+
+
         public void LoadImage(string fileName)
         {
             if (fileName == null)
@@ -85,24 +91,6 @@ namespace ImageViewer
 
             FileName = fileName;
             SetImage(_cache.GetOrLoadImage(fileName));
-        }
-
-        // ----------------- Rendering ------------------
-
-        /// <summary>
-        /// Just call Invalidate...
-        /// </summary>
-        /// <param name="isNewImage"></param>
-        public void Render(bool isNewImage)
-        {
-            // If displaying a new image, reset zoom/pan/rotate
-            if(isNewImage)
-            {
-                zoom = 0;
-                _pan = new Point(0, 0);
-                rotation = 0;
-            }
-            Invalidate();
         }
 
         /// <summary>
@@ -117,74 +105,8 @@ namespace ImageViewer
 
             if (_image != null)
             {
-                Bitmap imageToPaint = _image.Image;
-
-                //if(!string.IsNullOrEmpty(pMessageText))
-                //{
-                //    g.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighSpeed;
-                //    g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Low;
-                //    g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighSpeed;
-                //    g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighSpeed;
-                //}
-
-                var (w, h) = rotation switch
-                {
-                    0 => (_image.ActualWidth, _image.ActualHeight),
-                    180 => (_image.ActualWidth, _image.ActualHeight),
-                    _ => (_image.ActualHeight, _image.ActualWidth),
-                };
-
-                bool useOptimizedImage = false;
-                if (zoom == 0)
-                {
-                    // "Best fit"
-                    if ((w < this.Width) && (h < this.Height))
-                    {
-                        zoom = 1;
-                    }
-                    else
-                    {
-                        decimal propW = (decimal)this.Width / (decimal)w;
-                        decimal propH = (decimal)this.Height / (decimal)h;
-
-                        zoom = Math.Min(propW, propH);
-                        useOptimizedImage = true;
-                    }
-                }
-
-                int newWidth = (int)((decimal)_image.ActualWidth * zoom);
-                int newHeight = (int)((decimal)_image.ActualHeight * zoom);
-
-                if (useOptimizedImage)
-                {
-                    if (_optimizedImageFileName != FileName)
-                    {
-                        if (_optimizedScreenSizeImage != null)
-                        {
-                            _optimizedScreenSizeImage.Dispose();
-                        }
-                        _optimizedScreenSizeImage = new Bitmap(_image.Image, new Size(newWidth, newHeight));
-                        imageToPaint = _optimizedScreenSizeImage;
-                        _optimizedImageFileName = FileName;
-                    }
-                    else if (_optimizedScreenSizeImage != null)
-                    {
-                        imageToPaint = _optimizedScreenSizeImage;
-                    }
-                }
-
-                if (imageToPaint != null)
-                {
-                    g.TranslateTransform(this.Width / 2, this.Height / 2);
-                    g.TranslateTransform(_pan.X, _pan.Y);
-                    g.RotateTransform(rotation);
-                    g.TranslateTransform(-(newWidth / 2), -(newHeight / 2));
-                    g.DrawImage(imageToPaint, 0, 0, newWidth, newHeight);
-                    g.ResetTransform();
-                }
+                _imageRenderer.Render(g, _image);
             }
-
-            // Draw the message
             _messageRenderer.Render(g);
         }
 
@@ -200,27 +122,26 @@ namespace ImageViewer
             Render(e.Graphics);
         }
 
-        private bool pMouseDown = false;
-        private Point pLastPoint;
+        private bool _mouseDown = false;
+        private Point _lastPoint;
         protected override void OnMouseDown(MouseEventArgs e)
         {
-            if ((e.Button == MouseButtons.Left) && (zoom != 0))
+            if ((e.Button == MouseButtons.Left) && (_zoom != 0))
             {
-                pMouseDown = true;
-                pLastPoint = e.Location;
+                _mouseDown = true;
+                _lastPoint = e.Location;
             }
             base.OnMouseDown(e);
         }
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
-            if ((e.Button == MouseButtons.Left) && (pMouseDown))
+            if ((e.Button == MouseButtons.Left) && (_mouseDown))
             {
-                var dx = pLastPoint.X - e.Location.X;
-                var dy = pLastPoint.Y - e.Location.Y;
-                _pan.X -= dx;
-                _pan.Y -= dy;
-                pLastPoint = e.Location;
+                var dx = _lastPoint.X - e.Location.X;
+                var dy = _lastPoint.Y - e.Location.Y;
+                Pan = new Point(Pan.X - dx, Pan.Y - dy);
+                _lastPoint = e.Location;
                 Invalidate();
             }
         }
@@ -229,13 +150,11 @@ namespace ImageViewer
         {
             if(e.Button== MouseButtons.Left)
             {
-                pMouseDown = false;
+                _mouseDown = false;
             }
             base.OnMouseUp(e);
         }
 
-
-        // -------------- Text message UI ----------------
         public void ReceiveImage(ImageMeta img)
         {
             SetImage(img);
@@ -249,8 +168,9 @@ namespace ImageViewer
             _image = img;
             _backgroundBrush.Dispose();
             _backgroundBrush = new SolidBrush(img.AverageColor);
-            _optimizedImageFileName = "";
-            Render(true);
+            _zoom = 0;
+            Pan = new Point(0, 0);
+            _rotation = 0;
         }
     }
 }
