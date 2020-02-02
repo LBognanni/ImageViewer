@@ -8,7 +8,7 @@ using System.Windows.Forms;
 
 namespace ImageViewer.Rendering
 {
-    class MessageRenderer
+    public class MessageRenderer : IRenderer
     {
 
         private Timer _timer = null;
