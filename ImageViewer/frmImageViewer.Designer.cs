@@ -38,7 +38,6 @@
             this.ImageBox.Font = new System.Drawing.Font("Segoe UI", 15.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.ImageBox.Location = new System.Drawing.Point(0, 0);
             this.ImageBox.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
-            this.ImageBox.MaximumCachedFiles = 5;
             this.ImageBox.Name = "pImageBox";
             this.ImageBox.Size = new System.Drawing.Size(1304, 837);
             this.ImageBox.TabIndex = 0;
