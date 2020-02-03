@@ -1,6 +1,7 @@
 ﻿using ImageViewer.Rendering;
 using System;
 using System.Drawing;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace ImageViewer
@@ -161,6 +162,11 @@ namespace ImageViewer
             Pan = new Point(0, 0);
             _rotation = 0;
             Invalidate();
+        }
+
+        public void CacheImage(string fileName)
+        {
+            //Task.Run(() => _cache.LoadImageAsync(fileName));
         }
     }
 }

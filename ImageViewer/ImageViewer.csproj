@@ -4,7 +4,7 @@
     <OutputType>WinExe</OutputType>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <UseWindowsForms>true</UseWindowsForms>
-    <Platforms>AnyCPU;x64;x86</Platforms>
+    <Platforms>x64</Platforms>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <UseVSHostingProcess>false</UseVSHostingProcess>
@@ -84,4 +84,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="if not exists &quot;$(SolutionDir)Setup\bin&quot; mkdir &quot;$(SolutionDir)Setup\bin&quot;&#xD;&#xA;&quot;C:\Program Files (x86)\NSIS\makensis.exe&quot; &quot;$(SolutionDir)Setup\ImageViewer_setup.nsi&quot;" />
+  </Target>
 </Project>

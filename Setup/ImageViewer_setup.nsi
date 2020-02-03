@@ -64,10 +64,13 @@ ShowUnInstDetails show
 Section "-MainSection" SEC01
   SetOutPath "$INSTDIR"
   SetOverwrite ifnewer
-  File "..\ImageViewer\bin\Release\ImageViewer.exe"
-  File "..\ImageViewer\bin\Release\FreeImage.dll"
-  File "..\ImageViewer\bin\Release\FreeImageNET.dll"
-  File "..\ImageViewer\bin\Release\ImageViewer.exe.config"
+  File "..\ImageViewer\bin\Release\net472\ImageViewer.exe"
+  File "..\ImageViewer\bin\Release\net472\FreeImage.dll"
+  File "..\ImageViewer\bin\Release\net472\FreeImage-dotnet-core.dll"
+  File "..\ImageViewer\bin\Release\net472\ImageViewer.exe.config"
+  File "..\ImageViewer\bin\Release\net472\Microsoft.WindowsAPICodePack.dll"
+  File "..\ImageViewer\bin\Release\net472\Microsoft.WindowsAPICodePack.Shell.dll"
+  File "..\ImageViewer\bin\Release\net472\System.ValueTuple.dll"
   File "eula.txt"
   File "freeimage-license.txt"
   
@@ -113,13 +116,14 @@ Section Uninstall
   ReadRegStr $ICONS_GROUP ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "${PRODUCT_STARTMENU_REGVAL}"
   Delete "$INSTDIR\ImageViewer.exe"
   Delete "$INSTDIR\FreeImage.dll"
-  Delete "$INSTDIR\FreeImageNET.dll"
+  Delete "$INSTDIR\FreeImage-dotnet-core.dll"
   Delete "$INSTDIR\ImageViewer.exe.config"
   Delete "$INSTDIR\eula.txt"
   Delete "$INSTDIR\freeimage-license.txt"
+  Delete "$INSTDIR\Microsoft.WindowsAPICodePack.dll"
+  Delete "$INSTDIR\Microsoft.WindowsAPICodePack.Shell.dll"
+  Delete "$INSTDIR\System.ValueTuple.dll"
 
-  Delete "$SMPROGRAMS\$ICONS_GROUP\Uninstall.lnk"
-  Delete "$SMPROGRAMS\$ICONS_GROUP\Website.lnk"
   Delete "$DESKTOP\${PRODUCT_NAME}.lnk"
   Delete "$SMPROGRAMS\$ICONS_GROUP\${PRODUCT_NAME}.lnk"
 

@@ -205,37 +205,6 @@ namespace ImageViewer
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
-
-
-
-
-        public enum GWL
-        {
-            ExStyle = -20
-        }
-
-        public enum WS_EX
-        {
-            Transparent = 0x20,
-            Layered = 0x80000
-        }
-
-        public enum LWA
-        {
-            ColorKey = 0x1,
-            Alpha = 0x2
-        }
-
-        [DllImport("user32.dll", EntryPoint = "GetWindowLong")]
-        public static extern int GetWindowLong(IntPtr hWnd, GWL nIndex);
-
-        [DllImport("user32.dll", EntryPoint = "SetWindowLong")]
-        public static extern int SetWindowLong(IntPtr hWnd, GWL nIndex, int dwNewLong);
-
-        [DllImport("user32.dll", EntryPoint = "SetLayeredWindowAttributes")]
-        public static extern bool SetLayeredWindowAttributes(IntPtr hWnd, int crKey, byte alpha, LWA dwFlags);
-
-        
         private void ToggleBorderless()
         {
             if (this.TopMost)
@@ -313,72 +282,52 @@ namespace ImageViewer
         /// <summary>
         /// Cache timer, starts caching when the user is idle.
         /// </summary>
-        private Timer pTimerCache = null;
-        private int pLastDirection = 0;
-        private int pCachedCount = 0;
+        private Timer _timerCache = null;
+        private int _lastDirection = 0;
+        private int _cachedCount = 0;
         //private long pLastImageSwitchTicks = 0;
 
         private void UpdateImage(int direction)
         {
-            pLastDirection = direction;
+            _lastDirection = direction;
             // Set up timer
-            if (pTimerCache == null)
+            if (_timerCache == null)
             {
-                pTimerCache = new Timer
+                _timerCache = new Timer
                 {
                     Interval = 300
                 };
-                pTimerCache.Tick += (sender, args) =>
+                _timerCache.Tick += (sender, args) =>
                 {
-                    if (pLastDirection != 0)
+                    if (_lastDirection != 0)
                     {
-                        int iNext = _fileIndex + pLastDirection;
+                        int iNext = _fileIndex + _lastDirection;
                         if (iNext == _files.Length)
                             iNext = 0;
                         if (iNext < 0)
                             iNext = _files.Length - 1;
-                        //pImageBox.CacheImage(pFiles[iNext]);
+                        ImageBox.CacheImage(_files[iNext]);
                     }
-                    if(pCachedCount >= 3)
+                    if(_cachedCount >= 3)
                     {
-                        pTimerCache.Stop();
+                        _timerCache.Stop();
                     }
                     else
                     {
-                        pCachedCount++;
+                        _cachedCount++;
                     }
                 };
             }
 
             // Stop the cache timer
-            pTimerCache.Stop();
+            _timerCache.Stop();
 
             this.Text = string.Format("{0} - Image Viewer", System.IO.Path.GetFileName(currentFile));
             ImageBox.LoadImage(currentFile);
 
             // Start caching timer 
-            pCachedCount = 0;
-            pTimerCache.Start();
-
-            /*
-            // Stop caching if the user is changing images very quickly
-            const long MINIMUM_WAIT_FOR_CACHE = 200 * TimeSpan.TicksPerMillisecond;
-            long time = DateTime.Now.Ticks;
-            long tDifTicks = 0;
-            if(pLastImageSwitchTicks!=0)
-            {
-                tDifTicks = (time - pLastImageSwitchTicks);
-            }
-            pLastImageSwitchTicks = time;
-
-
-            if ((tDifTicks > MINIMUM_WAIT_FOR_CACHE) && (pFiles.Length > 1))
-            {
-                int iNext = pIndex + 1;
-                if (iNext == pFiles.Length)
-                    iNext = 0;
-                pImageBox.CacheImage(pFiles[iNext]);
-            }*/
+            _cachedCount = 0;
+            _timerCache.Start();
         }
     }
 }
