@@ -1,0 +1,16 @@
+version: 1.0.{build}
+configuration: Release
+platform: x64
+
+build:
+  verbosity: minimal
+
+artifacts:
+- path: Setup\bin\ImageViewer_Setup.exe
+  name: Setup
+  
+deploy:
+- provider: GitHub
+  auth_token:
+    secure: Jq17Q+XMLo6eIrSZJYpZMKf34R9SoKI1ztABotrIQKS94VSdJUOMRVUZdfXk0x4N
+  artifact: Setup
