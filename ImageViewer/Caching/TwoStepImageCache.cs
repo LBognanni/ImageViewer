@@ -23,18 +23,15 @@ namespace ImageViewer
             _receiver = receiver;
         }
 
-        public void ReplaceImage(string fileName, ImageMeta image)
-        {
-            _receiver.ReceiveImage(image);
-            _innerCache.ReplaceImage(fileName, image);
-        }
-
         public ImageMeta LoadImage(string fileName) => LoadImageAsync(fileName).Result;
 
         public ImageMeta GetOrLoadImage(string fileName) => _innerCache.GetOrLoadImage(fileName);
 
+        private string _lastImageToLoad = "";
+
         public async Task<ImageMeta> LoadImageAsync(string fileName)
         {
+            _lastImageToLoad = fileName;
             var slowTask = Task.Run(() => _slowLoader.LoadImage(fileName));
             var fastTask = Task.Run(() => _fastLoader.LoadImage(fileName));
             var firstTask = await Task.WhenAny(slowTask, fastTask).ConfigureAwait(false);
@@ -49,9 +46,21 @@ namespace ImageViewer
             }
             var img = await firstTask.ConfigureAwait(false);
 
-            _receiver.ReceiveImage(img);
+            if (_lastImageToLoad == fileName)
+            {
+                _receiver.ReceiveImage(img);
+            }
 
             return img;
+        }
+
+        public void ReplaceImage(string fileName, ImageMeta image)
+        {
+            if (_lastImageToLoad == fileName)
+            {
+                _receiver.ReceiveImage(image);
+            }
+            _innerCache.ReplaceImage(fileName, image);
         }
 
     }

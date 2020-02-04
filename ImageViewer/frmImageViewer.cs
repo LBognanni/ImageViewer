@@ -33,6 +33,7 @@ namespace ImageViewer
         public frmImageViewer(string fileName)
         {
             InitializeComponent();
+            this.Icon = new Icon("icon.ico");
             ImageBox.DoubleClick += ImageBox_DoubleClick;
 
             //this.KeyPreview = true;

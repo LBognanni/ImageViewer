@@ -64,13 +64,13 @@ ShowUnInstDetails show
 Section "-MainSection" SEC01
   SetOutPath "$INSTDIR"
   SetOverwrite ifnewer
-  File "..\ImageViewer\bin\Release\net472\ImageViewer.exe"
-  File "..\ImageViewer\bin\Release\net472\FreeImage.dll"
-  File "..\ImageViewer\bin\Release\net472\FreeImage-dotnet-core.dll"
-  File "..\ImageViewer\bin\Release\net472\ImageViewer.exe.config"
-  File "..\ImageViewer\bin\Release\net472\Microsoft.WindowsAPICodePack.dll"
-  File "..\ImageViewer\bin\Release\net472\Microsoft.WindowsAPICodePack.Shell.dll"
-  File "..\ImageViewer\bin\Release\net472\System.ValueTuple.dll"
+  File "..\ImageViewer\bin\x64\Release\net472\win-x64\ImageViewer.exe"
+  File "..\ImageViewer\bin\x64\Release\net472\win-x64\FreeImage.dll"
+  File "..\ImageViewer\bin\x64\Release\net472\win-x64\FreeImage-dotnet-core.dll"
+  File "..\ImageViewer\bin\x64\Release\net472\win-x64\ImageViewer.exe.config"
+  File "..\ImageViewer\bin\x64\Release\net472\win-x64\Microsoft.WindowsAPICodePack.dll"
+  File "..\ImageViewer\bin\x64\Release\net472\win-x64\Microsoft.WindowsAPICodePack.Shell.dll"
+  File "..\ImageViewer\bin\x64\Release\net472\win-x64\System.ValueTuple.dll"
   File "eula.txt"
   File "freeimage-license.txt"
   
