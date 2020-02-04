@@ -86,7 +86,7 @@ namespace ImageViewer
             catch
             {
                 throw;
-                return null;
+//                return null;
             }
         }
 

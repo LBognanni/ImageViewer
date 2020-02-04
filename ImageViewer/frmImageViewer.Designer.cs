@@ -54,7 +54,6 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1304, 837);
             this.Controls.Add(this.ImageBox);
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.Name = "frmImageViewer";
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
