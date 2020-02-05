@@ -65,6 +65,7 @@ Section "-MainSection" SEC01
   SetOutPath "$INSTDIR"
   SetOverwrite ifnewer
   File "..\ImageViewer\bin\x64\Release\net472\win-x64\ImageViewer.exe"
+  File "..\ImageViewer\bin\x64\Release\net472\win-x64\icon.ico"
   File "..\ImageViewer\bin\x64\Release\net472\win-x64\FreeImage.dll"
   File "..\ImageViewer\bin\x64\Release\net472\win-x64\FreeImage-dotnet-core.dll"
   File "..\ImageViewer\bin\x64\Release\net472\win-x64\ImageViewer.exe.config"
@@ -115,6 +116,7 @@ Section Uninstall
   ReadRegStr $ICONS_GROUP ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "${PRODUCT_STARTMENU_REGVAL}"
   Delete "$INSTDIR\ImageViewer.exe"
   Delete "$INSTDIR\FreeImage.dll"
+  Delete "$INSTDIR\icon.ico"
   Delete "$INSTDIR\FreeImage-dotnet-core.dll"
   Delete "$INSTDIR\ImageViewer.exe.config"
   Delete "$INSTDIR\eula.txt"
