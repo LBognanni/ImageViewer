@@ -94,7 +94,6 @@ namespace ImageViewer.Tests
             var receiver = new Mock<IReceiveImage>();
             receiver
                 .Setup(r => r.ReceiveImage(It.IsAny<ImageMeta>()))
-                .Callback(() => Console.WriteLine($"Receiver called!"))
                 .Verifiable();
 
             var slowLoader = GetLoader(50);
@@ -113,9 +112,7 @@ namespace ImageViewer.Tests
             var loader = new Mock<IImageLoader>();
             loader.Setup(l => l.LoadImage(It.IsAny<string>())).Returns(() =>
               {
-                  Console.WriteLine($"ImageLoader of {delay}ms starting");
                   Task.Delay(delay).Wait();
-                  Console.WriteLine($"ImageLoader of {delay} done");
                   return new ImageMeta();
               });
             return loader;
