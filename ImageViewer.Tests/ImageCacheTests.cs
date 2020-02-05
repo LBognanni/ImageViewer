@@ -96,12 +96,9 @@ namespace ImageViewer.Tests
             var fastLoader = GetLoader(500);
 
             TwoStepImageCache cache = new TwoStepImageCache(slowLoader.Object, fastLoader.Object, receiver.Object, 1);
-            cache.LoadImage("test.png");
+            await cache.LoadImageAsync("test.png");
 
             await Task.Delay(600);
-
-            slowLoader.Verify(l => l.LoadImage(It.IsAny<string>()), Times.Once());
-            fastLoader.Verify(l => l.LoadImage(It.IsAny<string>()), Times.Once());
 
             receiver.Verify(r => r.ReceiveImage(It.IsAny<ImageMeta>()), Times.Once);
         }
