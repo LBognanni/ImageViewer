@@ -76,6 +76,7 @@ namespace ImageViewer.Tests
             var receiver = new Mock<IReceiveImage>();
             receiver
                 .Setup(r => r.ReceiveImage(It.IsAny<ImageMeta>()))
+                .Callback(()=>Console.WriteLine("Receive"))
                 .Verifiable();
 
             var slowLoader = GetLoader(100);
@@ -98,6 +99,7 @@ namespace ImageViewer.Tests
             var receiver = new Mock<IReceiveImage>();
             receiver
                 .Setup(r => r.ReceiveImage(It.IsAny<ImageMeta>()))
+                .Callback(() => Console.WriteLine("Receive"))
                 .Verifiable();
 
             var slowLoader = GetLoader(50);
