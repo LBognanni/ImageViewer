@@ -74,6 +74,10 @@ namespace ImageViewer.Tests
         public async Task TwoStepImageCache_ReceivesTwiceWithSlowLoader()
         {
             var receiver = new Mock<IReceiveImage>();
+            receiver
+                .Setup(r => r.ReceiveImage(It.IsAny<ImageMeta>()))
+                .Verifiable();
+
             var slowLoader = GetLoader(100);
             var fastLoader = GetLoader(50);
             
