@@ -71,16 +71,21 @@ namespace ImageViewer.Tests
         }
 
         [Test]
-        public async Task TwoStepImageCache_ReceivesTwiceWithSlowLoader()
+        public void TwoStepImageCache_ReceivesTwiceWithSlowLoader()
         {
             var receiver = new Mock<IReceiveImage>();
+            receiver
+                .Setup(r => r.ReceiveImage(It.IsAny<ImageMeta>()))
+                .Callback(()=>Console.WriteLine("Receive"))
+                .Verifiable();
+
             var slowLoader = GetLoader(100);
             var fastLoader = GetLoader(50);
             
             TwoStepImageCache cache = new TwoStepImageCache(slowLoader.Object, fastLoader.Object, receiver.Object, 1);
             cache.LoadImage("test.png");
 
-            await Task.Delay(200);
+            Task.Delay(200).Wait();
 
             slowLoader.Verify(l => l.LoadImage(It.IsAny<string>()), Times.Once());
             fastLoader.Verify(l => l.LoadImage(It.IsAny<string>()), Times.Once());
@@ -89,19 +94,21 @@ namespace ImageViewer.Tests
         }
 
         [Test]
-        public async Task TwoStepImageCache_ReceivesOnceWithFastLoader()
+        public void TwoStepImageCache_ReceivesOnceWithFastLoader()
         {
             var receiver = new Mock<IReceiveImage>();
-            var slowLoader = GetLoader(50);
-            var fastLoader = GetLoader(100);
+            receiver
+                .Setup(r => r.ReceiveImage(It.IsAny<ImageMeta>()))
+                .Callback(() => Console.WriteLine("Receive"))
+                .Verifiable();
+
+            var slowLoader = GetLoader(20);
+            var fastLoader = GetLoader(300);
 
             TwoStepImageCache cache = new TwoStepImageCache(slowLoader.Object, fastLoader.Object, receiver.Object, 1);
             cache.LoadImage("test.png");
 
-            await Task.Delay(200);
-
-            slowLoader.Verify(l => l.LoadImage(It.IsAny<string>()), Times.Once());
-            fastLoader.Verify(l => l.LoadImage(It.IsAny<string>()), Times.Once());
+            Task.Delay(400).Wait();
 
             receiver.Verify(r => r.ReceiveImage(It.IsAny<ImageMeta>()), Times.Once);
         }
