@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -33,7 +35,15 @@ namespace ImageViewer
         public frmImageViewer(string fileName)
         {
             InitializeComponent();
-            this.Icon = new Icon("icon.ico");
+            var iconFile = Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "icon.ico");
+            try
+            {
+                this.Icon = new Icon(iconFile);
+            }
+            catch(Exception ex)
+            {
+                Debug.WriteLine($"Error loading icon from {iconFile} : {ex.Message}");
+            }
             ImageBox.DoubleClick += ImageBox_DoubleClick;
 
             //this.KeyPreview = true;
