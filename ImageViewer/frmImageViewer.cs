@@ -119,6 +119,8 @@ namespace ImageViewer
             }
         }
 
+        private double _transparency = 0.3f;
+
         /// <summary>
         /// Hotkeys
         /// </summary>
@@ -145,7 +147,10 @@ namespace ImageViewer
                 case Keys.R | Keys.Shift:
                     RotateImageInv();
                     return true;
-                    
+
+                case Keys.S:
+                    Shuffle();
+                    return true;
                 
                 // [F]: Toggle fullscreen
                 case Keys.F:
@@ -183,8 +188,30 @@ namespace ImageViewer
 
                 // [T] Toggle topmost
                 case Keys.T:
-                    this.TopMost = !this.TopMost;
+                    this.TopMost = !this.TopMost; 
+                    ImageBox.ShowMessage($"Now {(TopMost ? "" : "not ")}Top most", 300);
+
                     return true;
+
+                case Keys.W:
+                    ToggleClickThrough();
+                    break;
+
+                case Keys.D2:
+                    _transparency = .1;
+                    break;
+                case Keys.D3:
+                    _transparency = .2;
+                    break;
+                case Keys.D4:
+                    _transparency = .3;
+                    break;
+                case Keys.D5:
+                    _transparency = .5;
+                    break;
+                case Keys.D6:
+                    _transparency = .75;
+                    break;
 
                 // 1 : Switch between 100% and best fit
                 case Keys.D1:
@@ -206,14 +233,52 @@ namespace ImageViewer
                 // [C]	Copy file name
                 case Keys.C:
                     Clipboard.SetText(currentFile);
+                    ImageBox.ShowMessage($"File name copied to clipboard", 300);
                     return true;
                 // [A] Toggle autoplay
                 case Keys.A:
                     AutoPlay();
                     return true;
+                // [+] Autoplay faster
+                case Keys.Add:
+                    if(_autoPlayTimer!=null)
+                    {
+                        _autoPlayTimer.Interval =(int) ((float)_autoPlayTimer.Interval * 0.9f);
+                        ImageBox.ShowMessage($"Autoplay interval: {_autoPlayTimer.Interval}ms", 300);
+                    }
+                    break;
+                // [-] Autoplay slower
+                case Keys.Subtract:
+                    if (_autoPlayTimer != null)
+                    {
+                        _autoPlayTimer.Interval = (int)((float)_autoPlayTimer.Interval * 1.112f);
+                        ImageBox.ShowMessage($"Autoplay interval: {_autoPlayTimer.Interval}ms", 300);
+                    }
+                    break;
             }
 
             return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        private void Shuffle()
+        {
+            var r = new Random((int)DateTime.Now.ToFileTime());
+            _files = _files.OrderBy(x => r.Next()).ToArray();
+        }
+
+        private bool _isClickThrough = false;
+
+        private void ToggleClickThrough()
+        {
+            _isClickThrough = !_isClickThrough;
+            if(_isClickThrough)
+            {
+                ImageBox.ShowMessage($"Window will be click-thru once out of focus", 1000);
+            }
+            else
+            {
+                ImageBox.ShowMessage($"Click-thru disabled", 500);
+            }
         }
 
         private void ToggleBorderless()
@@ -240,7 +305,16 @@ namespace ImageViewer
         {
             base.OnDeactivate(e);
             try {
-                this.Opacity = .3;
+                this.Opacity = _transparency;
+
+                if (_isClickThrough)
+                {
+                    var handle = new HandleRef(this, this.Handle);
+                    var initialStyle = InteropHelper.GetWindowLongPtr(handle, (int)InteropHelper.GWL.ExStyle).ToInt64();
+                    const long layeredTransparent = (long)InteropHelper.WS_EX.Layered | (long)InteropHelper.WS_EX.Transparent;
+                    var newStyle = initialStyle | layeredTransparent;
+                    var result = InteropHelper.SetWindowLongPtr(handle, (int)InteropHelper.GWL.ExStyle, new IntPtr(newStyle));
+                }
             }
             catch { }
         }
@@ -256,11 +330,12 @@ namespace ImageViewer
             }
             else
             {
+                var screen = Screen.FromControl(this);
                 this.WindowState = FormWindowState.Normal;
                 this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
                 this.TopMost = true;
-                this.Location = Screen.PrimaryScreen.Bounds.Location;
-                this.Size = Screen.PrimaryScreen.Bounds.Size;
+                this.Location = screen.Bounds.Location;
+                this.Size = screen.Bounds.Size;
             }
         }
 
@@ -316,8 +391,7 @@ namespace ImageViewer
                         if (iNext == _files.Length)
                             iNext = 0;
                         if (iNext < 0)
-                            iNext = _files.Length - 1;
-                        ImageBox.CacheImage(_files[iNext]);
+                            iNext = _files.Length - 1;  
                     }
                     if(_cachedCount >= 3)
                     {

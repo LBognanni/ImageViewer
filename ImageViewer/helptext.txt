@@ -2,17 +2,15 @@
 
 Commands:
 
-[←]	Previous image
-[→]	Next image
+[←] Previous image       [→] Next image
+[S] Shuffle
 
-[F]	Toggle fullscreen
-[R]	Rotate 90 degrees clockwise
-[⇧R]	Rotate 90 degrees counter-clockwise
-[T]	Toggle Topmost
-[A]	Toggle autoplay
-[B]	Toggle borderless
+[F] Toggle fullscreen                      
+[R] Rotate clockwise     [⇧R] Rotate counter-clockwise       
+[T] Toggle Topmost       [A]  Toggle autoplay
+[B] Toggle borderless    [W]  Toggle clickthrough
 
-[C]	Copy file name
+[C] Copy file name
 
-[H]	Show this help screen
-[Q]	Quit
+[H] Show this help screen
+[Q] Quit
