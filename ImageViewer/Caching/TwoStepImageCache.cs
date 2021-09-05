@@ -32,13 +32,21 @@ namespace ImageViewer
         public async Task<ImageMeta> LoadImageAsync(string fileName)
         {
             _lastImageToLoad = fileName;
-            var slowTask = Task.Run(() => _slowLoader.LoadImage(fileName));
             var fastTask = Task.Run(() => _fastLoader.LoadImage(fileName));
+            var slowTask = Task.Run(() => _slowLoader.LoadImage(fileName));
             var firstTask = await Task.WhenAny(slowTask, fastTask).ConfigureAwait(false);
             if (firstTask == fastTask)
             {
                 Debug.WriteLine("fast was faster");
-                ThreadPool.QueueUserWorkItem(state => ReplaceImage(fileName, slowTask.Result));
+                ThreadPool.QueueUserWorkItem(state =>
+                {
+                    var img = slowTask.Result;
+                    if (_lastImageToLoad == fileName)
+                    {
+                        _receiver.ReceiveImage(img);
+                    }
+                    ReplaceImage(fileName, img);
+                });
             }
             else
             {

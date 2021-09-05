@@ -81,6 +81,9 @@ namespace ImageViewer
                     bmp.ConvertType(FREE_IMAGE_TYPE.FIT_BITMAP, true);
                 }
 
+                // ensure the bitmap is accessible
+                bmp.GetPixel(0, 0);
+
                 return bmp;
             }
             catch

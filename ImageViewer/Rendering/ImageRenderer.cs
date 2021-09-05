@@ -1,10 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace ImageViewer.Rendering
 {
@@ -58,22 +53,28 @@ namespace ImageViewer.Rendering
                 }
             }
 
-            int newWidth = (int)((decimal)image.ActualWidth * zoom);
-            int newHeight = (int)((decimal)image.ActualHeight * zoom);
             
             Bitmap imageToPaint = image.Image;
-            if (useOptimizedImage)
-            {
-                imageToPaint = GetOptimizedImage(image, isRotated, newWidth, newHeight);
-            }
 
             if (imageToPaint != null)
             {
+                int newWidth = (int)((decimal)image.ActualWidth * zoom);
+                int newHeight = (int)((decimal)image.ActualHeight * zoom);
+                if (useOptimizedImage)
+                {
+                    imageToPaint = GetOptimizedImage(image, isRotated, newWidth, newHeight);
+                }
                 g.TranslateTransform(_control.Width / 2, _control.Height / 2);
                 g.TranslateTransform(_control.Pan.X, _control.Pan.Y);
                 g.RotateTransform(_control.Rotation);
                 g.TranslateTransform(-(newWidth / 2), -(newHeight / 2));
-                g.DrawImage(imageToPaint, 0, 0, newWidth, newHeight);
+                try
+                {
+                    g.DrawImage(imageToPaint, 0, 0, newWidth, newHeight);
+                }
+                catch
+                {
+                }
                 g.ResetTransform();
             }
 

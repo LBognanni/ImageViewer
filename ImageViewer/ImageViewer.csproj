@@ -83,19 +83,19 @@
     <PackageReference Include="System.Resources.Extensions" Version="4.7.0" />
   </ItemGroup>
   <ItemGroup Condition=" '$(Platform)' == 'x86' ">
-    <None Include="..\packages\FreeImage-dotnet-core\4.3.6\runtimes\win7-x86\native\FreeImage.dll">
+    <None Include="$(userprofile)\.nuget\packages\FreeImage-dotnet-core\4.3.6\runtimes\win7-x86\native\FreeImage.dll">
       <Link>FreeImage.dll</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
   <ItemGroup Condition=" '$(Platform)' == 'x64' ">
-    <None Include="..\packages\FreeImage-dotnet-core\4.3.6\runtimes\win7-x64\native\FreeImage.dll">
+    <None Include="$(userprofile)\.nuget\packages\FreeImage-dotnet-core\4.3.6\runtimes\win7-x64\native\FreeImage.dll">
       <Link>FreeImage.dll</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
   <ItemGroup Condition="'$(Platform)'=='AnyCPU'">
-    <None Include="..\packages\FreeImage-dotnet-core\4.3.6\runtimes\win7-x64\native\FreeImage.dll">
+    <None Include="$(userprofile)\.nuget\packages\FreeImage-dotnet-core\4.3.6\runtimes\win7-x64\native\FreeImage.dll">
       <Link>FreeImage.dll</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
