@@ -31,6 +31,7 @@ namespace ImageViewer
         private int _fileIndex;
 
         private string currentFile => _files[_fileIndex];
+        public bool ShouldOpenAgain { get; private set; } = false;
 
         public frmImageViewer(string fileName)
         {
@@ -38,7 +39,7 @@ namespace ImageViewer
             var iconFile = Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "icon.ico");
             try
             {
-                this.Icon = new Icon(iconFile);
+                Icon = new Icon(iconFile);
             }
             catch(Exception ex)
             {
@@ -61,11 +62,11 @@ namespace ImageViewer
         /// <param name="fileName"></param>
         protected void LoadImage(string fileName)
         {
-            _directoryName = System.IO.Path.GetDirectoryName(fileName);
+            _directoryName = Path.GetDirectoryName(fileName);
 
             // Find all the images in the same directory as fileName
             _files = Program.Extensions.SelectMany(ext =>
-                        System.IO.Directory.GetFiles(_directoryName, ext))
+                        Directory.GetFiles(_directoryName, ext))
                         .OrderBy(f => f, StringComparer.CurrentCultureIgnoreCase).ToArray();
 
             // Find the index of fileName in pFiles
@@ -86,8 +87,8 @@ namespace ImageViewer
         protected override void OnShown(EventArgs e)
         {
             base.OnShown(e);
-            this.Activate();
-            this.BringToFront();
+            Activate();
+            BringToFront();
             UpdateImage(1);
             ImageBox.ShowMessage("Press H for help", 1000);
         }
@@ -159,13 +160,13 @@ namespace ImageViewer
                 
                 // [Esc] close topmost -> quit
                 case Keys.Escape:
-                    if (this.TopMost)
+                    if (TopMost)
                     {
                         ToggleFullScreen();
                     }
                     else
                     {
-                        this.Close();
+                        Close();
                     }
                     return true;
 
@@ -180,15 +181,21 @@ namespace ImageViewer
                         ImageBox.ShowMessage(Program.GetResource("helptext.txt"), 10000);
                     }
                     return true;
-                
+
                 // [Q]: Quit
                 case Keys.Q:
-                    this.Close();
+                    Close();
+                    return true;
+
+                // [O]: ReOpen
+                case Keys.O:
+                    ShouldOpenAgain = true;
+                    Close();
                     return true;
 
                 // [T] Toggle topmost
                 case Keys.T:
-                    this.TopMost = !this.TopMost; 
+                    TopMost = !TopMost; 
                     ImageBox.ShowMessage($"Now {(TopMost ? "" : "not ")}Top most", 300);
 
                     return true;
@@ -283,33 +290,33 @@ namespace ImageViewer
 
         private void ToggleBorderless()
         {
-            if (this.TopMost)
+            if (TopMost)
             {
-                this.FormBorderStyle = FormBorderStyle.Sizable;
-                this.TopMost = false;
+                FormBorderStyle = FormBorderStyle.Sizable;
+                TopMost = false;
             }
             else
             {
-                this.FormBorderStyle = FormBorderStyle.None;
-                this.TopMost = true;
+                FormBorderStyle = FormBorderStyle.None;
+                TopMost = true;
             }
         }
 
         protected override void OnActivated(EventArgs e)
         {
             base.OnActivated(e);
-            this.Opacity = 1;
+            Opacity = 1;
         }
 
         protected override void OnDeactivate(EventArgs e)
         {
             base.OnDeactivate(e);
             try {
-                this.Opacity = _transparency;
+                Opacity = _transparency;
 
                 if (_isClickThrough)
                 {
-                    var handle = new HandleRef(this, this.Handle);
+                    var handle = new HandleRef(this, Handle);
                     var initialStyle = InteropHelper.GetWindowLongPtr(handle, (int)InteropHelper.GWL.ExStyle).ToInt64();
                     const long layeredTransparent = (long)InteropHelper.WS_EX.Layered | (long)InteropHelper.WS_EX.Transparent;
                     var newStyle = initialStyle | layeredTransparent;
@@ -322,20 +329,20 @@ namespace ImageViewer
         private void ToggleFullScreen()
         {
 
-            if (this.TopMost)
+            if (TopMost)
             {
-                this.TopMost = false;
-                this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Sizable;
-                this.WindowState = FormWindowState.Maximized;
+                TopMost = false;
+                FormBorderStyle = FormBorderStyle.Sizable;
+                WindowState = FormWindowState.Maximized;
             }
             else
             {
                 var screen = Screen.FromControl(this);
-                this.WindowState = FormWindowState.Normal;
-                this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
-                this.TopMost = true;
-                this.Location = screen.Bounds.Location;
-                this.Size = screen.Bounds.Size;
+                WindowState = FormWindowState.Normal;
+                FormBorderStyle = FormBorderStyle.None;
+                TopMost = true;
+                Location = screen.Bounds.Location;
+                Size = screen.Bounds.Size;
             }
         }
 
@@ -407,7 +414,7 @@ namespace ImageViewer
             // Stop the cache timer
             _timerCache.Stop();
 
-            this.Text = string.Format("{0} - Image Viewer", System.IO.Path.GetFileName(currentFile));
+            Text = string.Format("{0} - Image Viewer", Path.GetFileName(currentFile));
             ImageBox.LoadImage(currentFile);
 
             // Start caching timer 

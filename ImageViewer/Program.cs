@@ -60,6 +60,65 @@ namespace ImageViewer
             using var sr = new StreamReader(resource);
             return sr.ReadToEnd();
         }
+
+        class FileOpenContext : ApplicationContext
+        {
+            private frmImageViewer _frmImageViewer;
+
+            public FileOpenContext(string fileName)
+            {
+                ShowForm(fileName);
+            }
+
+            private void ShowForm(string fileName)
+            {
+                fileName = GetFileToShow(fileName);
+                if (!string.IsNullOrEmpty(fileName))
+                {
+                    _frmImageViewer = new frmImageViewer(fileName);
+                    _frmImageViewer.FormClosed += _frmImageViewer_FormClosed;
+                    _frmImageViewer.Show();
+                }
+                else
+                {
+                    ExitThread();
+                }
+            }
+
+            private string GetFileToShow(string fileName)
+            {
+                if (!string.IsNullOrWhiteSpace(fileName) && File.Exists(fileName))
+                {
+                    return fileName;
+                }
+
+                var dlg = new OpenFileDialog
+                {
+                    Filter = "Image file |" + string.Join(";", Extensions),
+                    Title = "Select an image file"
+                };
+
+                if (dlg.ShowDialog() == DialogResult.OK)
+                {
+                    return dlg.FileName;
+                }
+
+                return "";
+            }
+
+            private void _frmImageViewer_FormClosed(object sender, FormClosedEventArgs e)
+            {
+                if (_frmImageViewer.ShouldOpenAgain)
+                {
+                    ShowForm("");
+                }
+                else
+                {
+                    ExitThread();
+                }
+            }
+        }
+
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -75,29 +134,13 @@ namespace ImageViewer
 
             if (args.Length > 0)
             {
-                if (System.IO.File.Exists(args[0]))
+                if (File.Exists(args[0]))
                 {
                     fileName = args[0];
                 }
             }
 
-            if (string.IsNullOrWhiteSpace(fileName))
-            {
-                var dlg = new OpenFileDialog
-                {
-                    Filter = "Image file |" + string.Join(";", Extensions), 
-                    Title = "Select an image file"
-                };
-
-                if (dlg.ShowDialog() == DialogResult.OK)
-                {
-                    fileName = dlg.FileName;
-                }
-                else
-                    return;
-            }
-
-            Application.Run(new frmImageViewer(fileName));
+            Application.Run(new FileOpenContext(fileName));
         }
     }
 }

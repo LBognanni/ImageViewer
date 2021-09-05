@@ -3,7 +3,7 @@
 Commands:
 
 [←] Previous image       [→] Next image
-[S] Shuffle
+[S] Shuffle				 [O] Open dialog
 
 [F] Toggle fullscreen                      
 [R] Rotate clockwise     [⇧R] Rotate counter-clockwise       

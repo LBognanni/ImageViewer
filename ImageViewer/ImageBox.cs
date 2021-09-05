@@ -91,21 +91,22 @@ namespace ImageViewer
         /// <param name="g"></param>
         private void Render(Graphics g)
         {
-            decimal zoom = Zoom;
-            // Black background
-            g.FillRectangle(_backgroundBrush, this.ClientRectangle);
-
-            if (_image != null)
+            try
             {
-                _imageRenderer.Render(g, _image);
-            }
-            _messageRenderer.Render(g);
-        }
+                // Black background
+                g.FillRectangle(_backgroundBrush, this.ClientRectangle);
 
-        protected override void OnPaintBackground(PaintEventArgs pevent)
-        {
-            // Prevent background painting.
-            //base.OnPaintBackground(pevent);
+                if (_image != null)
+                {
+                    _imageRenderer.Render(g, _image);
+                }
+
+                _messageRenderer.Render(g);
+            }
+            catch
+            {
+                // we don't want exceptions to be thrown while painting
+            }
         }
 
         protected override void OnPaint(PaintEventArgs e)
