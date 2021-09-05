@@ -13,7 +13,7 @@ namespace ImageViewer
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern bool SetProcessDPIAware();
 
-        public static string[] Extensions = new string[] {
+        public static string[] Extensions = {
      "*.bmp",
      "*.dds",
      "*.exr",
@@ -55,14 +55,10 @@ namespace ImageViewer
         /// <returns></returns>
         public static string GetResource(string resourceName)
         {
-            Assembly MainAssembly = Assembly.GetExecutingAssembly();
-            using (var resource = MainAssembly.GetManifestResourceStream(string.Format("{0}.{1}", MainAssembly.GetName().Name, resourceName)))
-            {
-                using (StreamReader sr = new StreamReader(resource))
-                {
-                    return sr.ReadToEnd();
-                }
-            }
+            var mainAssembly = Assembly.GetExecutingAssembly();
+            using var resource = mainAssembly.GetManifestResourceStream($"{mainAssembly.GetName().Name}.{resourceName}");
+            using var sr = new StreamReader(resource);
+            return sr.ReadToEnd();
         }
         /// <summary>
         /// The main entry point for the application.
@@ -73,7 +69,7 @@ namespace ImageViewer
             // Fix UHD displays
             if (Environment.OSVersion.Version.Major >= 6) SetProcessDPIAware();
 
-            string tFileName = "";
+            var fileName = "";
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
@@ -81,24 +77,27 @@ namespace ImageViewer
             {
                 if (System.IO.File.Exists(args[0]))
                 {
-                    tFileName = args[0];
+                    fileName = args[0];
                 }
             }
 
-            if (string.IsNullOrWhiteSpace(tFileName))
+            if (string.IsNullOrWhiteSpace(fileName))
             {
-                System.Windows.Forms.OpenFileDialog dlg = new OpenFileDialog();
-                dlg.Filter = "Image file |" + String.Join(";", Extensions);
-                dlg.Title = "Select an image file";
+                var dlg = new OpenFileDialog
+                {
+                    Filter = "Image file |" + string.Join(";", Extensions), 
+                    Title = "Select an image file"
+                };
+
                 if (dlg.ShowDialog() == DialogResult.OK)
                 {
-                    tFileName = dlg.FileName;
+                    fileName = dlg.FileName;
                 }
                 else
                     return;
             }
 
-            Application.Run(new frmImageViewer(tFileName));
+            Application.Run(new frmImageViewer(fileName));
         }
     }
 }

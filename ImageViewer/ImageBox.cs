@@ -11,9 +11,9 @@ namespace ImageViewer
         public Point Pan { get; set; } = new Point(0, 0);
         Brush _backgroundBrush = Brushes.Black;
         
-        private TwoStepImageCache _cache;
-        private MessageRenderer _messageRenderer;
-        private ImageRenderer _imageRenderer;
+        private readonly TwoStepImageCache _cache;
+        private readonly MessageRenderer _messageRenderer;
+        private readonly ImageRenderer _imageRenderer;
         private ImageMeta _image;
 
         public ImageBox()
@@ -162,11 +162,6 @@ namespace ImageViewer
             Pan = new Point(0, 0);
             _rotation = 0;
             Invalidate();
-        }
-
-        public void CacheImage(string fileName)
-        {
-            //Task.Run(() => _cache.LoadImageAsync(fileName));
         }
     }
 }
