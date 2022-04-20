@@ -2,15 +2,13 @@
 
 Commands:
 
-[←] Previous image       [→] Next image
-[S] Shuffle				 [O] Open dialog
+[←] Previous image	[→] Next image
+[S] Shuffle	[O] Open dialog
 
-[F] Toggle fullscreen                      
-[R] Rotate clockwise     [⇧R] Rotate counter-clockwise       
-[T] Toggle Topmost       [A]  Toggle autoplay
-[B] Toggle borderless    [W]  Toggle clickthrough
-
-[C] Copy file name
+[F] Toggle fullscreen	[C] Copy file name
+[R] Rotate clockwise	[⇧R] Rotate counter-clockwise
+[T] Toggle Topmost	[A]  Toggle autoplay
+[B] Toggle borderless	[W]  Toggle clickthrough
 
 [H] Show this help screen
 [Q] Quit
