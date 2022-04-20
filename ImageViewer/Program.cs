@@ -76,6 +76,7 @@ namespace ImageViewer
                 if (!string.IsNullOrEmpty(fileName))
                 {
                     _frmImageViewer = new frmImageViewer(fileName);
+                    _frmImageViewer.Location = Cursor.Position;
                     _frmImageViewer.FormClosed += _frmImageViewer_FormClosed;
                     _frmImageViewer.Show();
                 }
