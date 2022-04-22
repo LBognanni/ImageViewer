@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("CodeMade")]
 [assembly: AssemblyProduct("CodeMadeImageViewer")]
-[assembly: AssemblyCopyright("Copyright ©  2016 Loris Bognanni http://codemade.co.uk/")]
+[assembly: AssemblyCopyright("Copyright © Loris Bognanni http://codemade.co.uk/")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

@@ -1,0 +1,54 @@
+name: Build
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      deployments: write
+      packages: write
+    
+    steps:
+    - name: "Checkout Code"
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: '0'
+      
+    - name: Bump version and push tag
+      id: tag
+      uses: anothrNick/github-tag-action@1.38.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        WITH_V: false
+        #DRY_RUN: true
+
+    - uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: '6.0.x'
+
+    - name: "Run build"
+      env:
+        VERSION: ${{ steps.tag.outputs.new_tag }}
+      run: |
+        echo "$(tr -d '\r' < ./build.sh)" > ./build.sh
+        chmod +x ./build.sh
+        ./build.sh
+
+    - name: Install NSIS
+      run: |
+        apt-get -y update
+        apt-get -y install nsis
+
+    - name: Build Setup
+      run: makensis -DVERSION=${{ steps.tag.outputs.new_tag }} ./Setup/ImageViewer_setup.nsi
+      
+    - uses: ncipollo/release-action@v1
+      with:
+        tag: "${{ steps.tag.outputs.new_tag }}"
+        artifacts: "Setup/ImageViewer_Setup.exe"
+        token: ${{ secrets.GITHUB_TOKEN }}
+      
