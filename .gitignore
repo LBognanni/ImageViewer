@@ -19,3 +19,7 @@ obj
 /ico16.png
 /ico128.png
 packages
+.idea
+.tmp
+output
+temp
