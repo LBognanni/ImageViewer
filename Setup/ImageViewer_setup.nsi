@@ -1,7 +1,7 @@
 
 ; HM NIS Edit Wizard helper defines
 !define PRODUCT_NAME "CodeMade Image Viewer"
-!define PRODUCT_VERSION "1.0"
+!define PRODUCT_VERSION ${VERSION}
 !define PRODUCT_EXE "imageviewer.exe"
 !define PRODUCT_PUBLISHER "www.codemade.co.uk"
 !define PRODUCT_WEB_SITE "http://www.codemade.co.uk/imageviewer/?from=winlink"
@@ -54,7 +54,7 @@ var ICONS_GROUP
 ; MUI end ------
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
-OutFile "bin\ImageViewer_Setup.exe"
+OutFile "ImageViewer_Setup.exe"
 InstallDir "$PROGRAMFILES64\${PRODUCT_NAME}"
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails show
@@ -64,14 +64,14 @@ Section "-MainSection" SEC01
   SetRegView 64
   SetOutPath "$INSTDIR"
   SetOverwrite ifnewer
-  File "..\ImageViewer\bin\x64\Release\net472\win-x64\ImageViewer.exe"
-  File "..\ImageViewer\bin\x64\Release\net472\win-x64\icon.ico"
-  File "..\ImageViewer\bin\x64\Release\net472\win-x64\FreeImage.dll"
-  File "..\ImageViewer\bin\x64\Release\net472\win-x64\FreeImage-dotnet-core.dll"
-  File "..\ImageViewer\bin\x64\Release\net472\win-x64\ImageViewer.exe.config"
-  File "..\ImageViewer\bin\x64\Release\net472\win-x64\Microsoft.WindowsAPICodePack.dll"
-  File "..\ImageViewer\bin\x64\Release\net472\win-x64\Microsoft.WindowsAPICodePack.Shell.dll"
-  File "..\ImageViewer\bin\x64\Release\net472\win-x64\System.ValueTuple.dll"
+  File "..\output\ImageViewer.exe"
+  File "..\output\icon.ico"
+  File "..\output\FreeImage.dll"
+  File "..\output\FreeImage-dotnet-core.dll"
+  File "..\output\ImageViewer.exe.config"
+  File "..\output\Microsoft.WindowsAPICodePack.dll"
+  File "..\output\Microsoft.WindowsAPICodePack.Shell.dll"
+  File "..\output\System.ValueTuple.dll"
   File "eula.txt"
   File "freeimage-license.txt"
   
