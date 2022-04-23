@@ -44,7 +44,9 @@ jobs:
         sudo apt-get -y install nsis
 
     - name: Build Setup
-      run: makensis -DVERSION=${{ steps.tag.outputs.new_tag }} ./Setup/ImageViewer_setup.nsi
+      run: |
+        wget https://download.microsoft.com/download/2/E/6/2E61CFA4-993B-4DD4-91DA-3737CD5CD6E3/vcredist_x64.exe
+        makensis -DVERSION=${{ steps.tag.outputs.new_tag }} ./Setup/ImageViewer_setup.nsi
       
     - uses: ncipollo/release-action@v1
       with:

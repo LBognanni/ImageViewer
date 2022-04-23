@@ -74,6 +74,8 @@ Section "-MainSection" SEC01
   File "..\output\System.ValueTuple.dll"
   File "eula.txt"
   File "freeimage-license.txt"
+  File "..\vcredist_x64.exe"
+  ExecWait "$INSTDIR\vcredist_x64.exe /install /passive"
   
   CreateDirectory "$SMPROGRAMS\$ICONS_GROUP"
   CreateShortCut "$SMPROGRAMS\$ICONS_GROUP\${PRODUCT_NAME}.lnk" "$INSTDIR\ImageViewer.exe"
