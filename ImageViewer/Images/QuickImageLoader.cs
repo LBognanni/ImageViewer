@@ -15,7 +15,7 @@ namespace ImageViewer
             if(bmp != null)
             {
                 bmp.FileName = fileName;
-                bmp.IsFullResImage = false;
+                bmp.IsFullResolution = false;
                 bmp.AverageColor = GetAverageColor(bmp.Image);
             }
 
@@ -49,7 +49,6 @@ namespace ImageViewer
                 if (img == null)
                     return null;
 
-                Console.WriteLine("Quick done!");
                 return new ImageMeta
                 {
                     Image = file.Thumbnail.ExtraLargeBitmap,

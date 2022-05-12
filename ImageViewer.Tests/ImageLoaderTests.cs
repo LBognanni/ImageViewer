@@ -15,7 +15,7 @@ namespace ImageViewer.Tests
             Assert.AreEqual(Color.Red.ToArgb(), img.AverageColor.ToArgb());
             Assert.AreEqual(10, img.ActualWidth);
             Assert.AreEqual(10, img.ActualHeight);
-            Assert.AreEqual(true, img.IsFullResImage);
+            Assert.AreEqual(true, img.IsFullResolution);
         }
 
         [Test]
@@ -27,7 +27,7 @@ namespace ImageViewer.Tests
             //Assert.AreEqual(Color.Red, img.AverageColor);
             Assert.AreEqual(10, img.ActualWidth);
             Assert.AreEqual(10, img.ActualHeight);
-            Assert.AreEqual(false, img.IsFullResImage);
+            Assert.AreEqual(false, img.IsFullResolution);
         }
     }
 }

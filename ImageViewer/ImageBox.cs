@@ -1,7 +1,7 @@
 ﻿using ImageViewer.Rendering;
+using Polly;
 using System;
 using System.Drawing;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace ImageViewer
@@ -14,6 +14,7 @@ namespace ImageViewer
         private readonly TwoStepImageCache _cache;
         private readonly MessageRenderer _messageRenderer;
         private readonly ImageRenderer _imageRenderer;
+        private readonly Policy _retryPolicy;
         private ImageMeta _image;
 
         public ImageBox()
@@ -21,6 +22,7 @@ namespace ImageViewer
             _cache = new TwoStepImageCache(new ImageLoader(), new QuickImageLoader(), this, 5);
             _messageRenderer = new MessageRenderer(this);
             _imageRenderer = new ImageRenderer(this);
+            _retryPolicy = Policy.Handle<Exception>().WaitAndRetry(new TimeSpan[] { TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(750) });
         }
 
         protected override void OnHandleCreated(EventArgs e)
@@ -82,7 +84,7 @@ namespace ImageViewer
             if (fileName == null)
                 return;
 
-            SetImage(_cache.GetOrLoadImage(fileName));
+            _retryPolicy.Execute(() => SetImage(_cache.GetOrLoadImage(fileName)));
         }
 
         /// <summary>

@@ -3,6 +3,7 @@ using FreeImageAPI;
 using System.Drawing;
 using System.Linq;
 using System.Diagnostics;
+using ImageViewer.Properties;
 
 namespace ImageViewer
 {
@@ -14,16 +15,16 @@ namespace ImageViewer
             Debug.WriteLine("Slow done!");
             return new ImageMeta
             {
-                Image = bmp?.ToBitmap(),
+                Image = bmp,
                 FileName = fileName,
-                IsFullResImage = true,
+                IsFullResolution = true,
                 ActualHeight = bmp?.Height ?? 0,
                 ActualWidth = bmp?.Width ?? 0,
                 AverageColor = GetAverageColor(bmp)
             };
         }
 
-        private Color GetAverageColor(FreeImageBitmap bmp)
+        private Color GetAverageColor(Bitmap bmp)
         {
             if(bmp == null)
             {
@@ -60,7 +61,7 @@ namespace ImageViewer
         /// </summary>
         /// <param name="fileName"></param>
         /// <returns></returns>
-        private FreeImageBitmap LoadBitmap(string fileName)
+        private Bitmap LoadBitmap(string fileName)
         {
             FREE_IMAGE_LOAD_FLAGS flags = FREE_IMAGE_LOAD_FLAGS.DEFAULT;
 
@@ -84,12 +85,18 @@ namespace ImageViewer
                 // ensure the bitmap is accessible
                 bmp.GetPixel(0, 0);
 
-                return bmp;
+                return bmp.ToBitmap();
             }
             catch
             {
-                throw;
-//                return null;
+                try
+                {
+                    return Image.FromFile(fileName) as Bitmap;
+                }
+                catch
+                {
+                    return Properties.Resources.ResourceManager.GetObject("broken") as Bitmap;
+                }
             }
         }
 

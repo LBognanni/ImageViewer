@@ -71,7 +71,7 @@ namespace ImageViewer.Tests
         }
 
         [Test]
-        public void TwoStepImageCache_ReceivesTwiceWithSlowLoader()
+        public async Task TwoStepImageCache_ReceivesTwiceWithSlowLoader()
         {
             var receiver = new Mock<IReceiveImage>();
             receiver
@@ -85,7 +85,7 @@ namespace ImageViewer.Tests
             TwoStepImageCache cache = new TwoStepImageCache(slowLoader.Object, fastLoader.Object, receiver.Object, 1);
             cache.LoadImage("test.png");
 
-            Task.Delay(200).Wait();
+            await Task.Delay(200);
 
             slowLoader.Verify(l => l.LoadImage(It.IsAny<string>()), Times.Once());
             fastLoader.Verify(l => l.LoadImage(It.IsAny<string>()), Times.Once());
