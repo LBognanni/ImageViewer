@@ -63,15 +63,18 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="helptext.txt" />
+    <None Remove="Images\broken.png" />
+    <EmbeddedResource Include="Images\broken.png" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="FreeImage-dotnet-core" Version="4.3.6" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+    <PackageReference Include="Polly" Version="7.2.3" />
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
-    <PackageReference Include="WindowsAPICodePack-Core" Version="1.1.1" />
+    <PackageReference Include="WindowsAPICodePack-Core" Version="1.1.2" />
     <PackageReference Include="WindowsAPICodePack-Shell" Version="1.1.1" />
-    <PackageReference Include="System.Resources.Extensions" Version="4.7.0" />
+    <PackageReference Include="System.Resources.Extensions" Version="6.0.0" />
   </ItemGroup>
   <ItemGroup Condition=" '$(Platform)' == 'x86' ">
     <None Include="$(SolutionDir)packages\FreeImage-dotnet-core\4.3.6\runtimes\win7-x86\native\FreeImage.dll">

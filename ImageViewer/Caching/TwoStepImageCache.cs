@@ -38,13 +38,9 @@ namespace ImageViewer
             if (firstTask == fastTask)
             {
                 Debug.WriteLine("fast was faster");
-                ThreadPool.QueueUserWorkItem(state =>
+                ThreadPool.QueueUserWorkItem(async _ =>
                 {
-                    var img = slowTask.Result;
-                    if (_lastImageToLoad == fileName)
-                    {
-                        _receiver.ReceiveImage(img);
-                    }
+                    var img = await slowTask;
                     ReplaceImage(fileName, img);
                 });
             }

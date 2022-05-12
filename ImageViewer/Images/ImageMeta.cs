@@ -12,7 +12,7 @@ namespace ImageViewer
         public Bitmap Image { get; set; }
         public Color AverageColor { get; set; }
         public string FileName { get; set; }
-        public bool IsFullResImage { get; set; }
+        public bool IsFullResolution { get; set; }
         public int ActualWidth { get; set; }
         public int ActualHeight { get; set; }
         public int LastUsed { get; set; }
