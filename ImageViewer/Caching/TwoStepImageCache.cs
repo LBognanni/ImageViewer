@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -31,16 +29,39 @@ namespace ImageViewer
 
         public async Task<ImageMeta> LoadImageAsync(string fileName)
         {
+            Debug.WriteLine($"Loading image: {Path.GetFileName(fileName)}");
             _lastImageToLoad = fileName;
-            var fastTask = Task.Run(() => _fastLoader.LoadImage(fileName));
-            var slowTask = Task.Run(() => _slowLoader.LoadImage(fileName));
-            var firstTask = await Task.WhenAny(slowTask, fastTask).ConfigureAwait(false);
-            if (firstTask == fastTask)
+            var fastTask = Task.Run(async () =>
             {
+                //await Task.Delay(100);
+                return _fastLoader.LoadImage(fileName);
+            });
+            var slowTask = Task.Run(async() =>
+            {
+                //await Task.Delay(1000);
+                return _slowLoader.LoadImage(fileName);
+            });
+
+            var firstTask = await Task.WhenAny(slowTask, fastTask).ConfigureAwait(false);
+     
+            if (firstTask == fastTask)
+            {       
+                var sw = new Stopwatch();
+                sw.Start();
                 Debug.WriteLine("fast was faster");
                 ThreadPool.QueueUserWorkItem(async _ =>
                 {
                     var img = await slowTask;
+                    
+                    sw.Stop();
+                    const int minimumDelay = 180;
+                    if (sw.ElapsedMilliseconds < minimumDelay)
+                    {
+                        Debug.WriteLine($"not enough time has passed ({sw.ElapsedMilliseconds}), waiting a bit...");
+                        await Task.Delay(minimumDelay - (int)sw.ElapsedMilliseconds);
+                    }
+                    
+                    Debug.WriteLine("Replacing image with full res one");
                     ReplaceImage(fileName, img);
                 });
             }
@@ -60,11 +81,11 @@ namespace ImageViewer
 
         public void ReplaceImage(string fileName, ImageMeta image)
         {
+            _innerCache.ReplaceImage(fileName, image);
             if (_lastImageToLoad == fileName)
             {
                 _receiver.ReceiveImage(image);
             }
-            _innerCache.ReplaceImage(fileName, image);
         }
 
     }

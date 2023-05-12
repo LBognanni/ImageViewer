@@ -11,6 +11,7 @@ namespace ImageViewer
     {
         public ImageMeta LoadImage(string fileName)
         {
+            using var counter = new PerformanceTimer(nameof(QuickImageLoader));
             var bmp = LoadBitmap(fileName);
             if(bmp != null)
             {

@@ -23,3 +23,6 @@ packages
 .tmp
 output
 temp
+/ImageViewer/Properties/launchSettings.json
+/Setup/ImageViewer_Setup.exe
+/vcredist_x64.exe

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 
 namespace ImageViewer.Rendering
 {
@@ -20,7 +21,6 @@ namespace ImageViewer.Rendering
         {
             decimal zoom = _control.Zoom;
             int w, h;
-            bool isRotated = false;
             bool useOptimizedImage = false;
 
             if ((_control.Rotation == 0) || (_control.Rotation == 180))
@@ -32,9 +32,7 @@ namespace ImageViewer.Rendering
             {
                 w = image.ActualHeight;
                 h = image.ActualWidth;
-                isRotated = true;
             }
-
 
             if (zoom == 0)
             {
@@ -62,7 +60,7 @@ namespace ImageViewer.Rendering
                 int newHeight = (int)((decimal)image.ActualHeight * zoom);
                 if (useOptimizedImage)
                 {
-                    imageToPaint = GetOptimizedImage(image, isRotated, newWidth, newHeight);
+                    imageToPaint = GetOptimizedImage(image, newWidth, newHeight);
                 }
                 g.TranslateTransform(_control.Width / 2, _control.Height / 2);
                 g.TranslateTransform(_control.Pan.X, _control.Pan.Y);
@@ -80,17 +78,29 @@ namespace ImageViewer.Rendering
 
         }
 
-        private Bitmap GetOptimizedImage(ImageMeta image, bool isRotated, int newWidth, int newHeight)
+        private Bitmap GetOptimizedImage(ImageMeta image, int newWidth, int newHeight)
         {
             if ((_optimizedImageFileName != image.FileName) || (_optimizedImageRotation != _control.Rotation))
             {
                 InvalidateCache();
-                _optimizedScreenSizeImage = new Bitmap(image.Image, newWidth, newHeight);
+                _optimizedScreenSizeImage = ResizeBitmap(image.Image, newWidth, newHeight);
                 _optimizedImageFileName = image.FileName;
                 _optimizedImageRotation = _control.Rotation;
             }
             return _optimizedScreenSizeImage;
         }
+
+        private Bitmap ResizeBitmap(Bitmap imageImage, int newWidth, int newHeight)
+        {
+            var dest = new Bitmap(newWidth, newHeight);
+            using var g = Graphics.FromImage(dest);
+            g.CompositingQuality = CompositingQuality.HighQuality;
+            g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            g.DrawImage(imageImage, Rect(dest.Size), Rect(imageImage.Size), GraphicsUnit.Pixel);
+            return dest;
+        }
+
+        private Rectangle Rect(Size sz) => new(Point.Empty, sz);
 
         internal void InvalidateCache()
         {

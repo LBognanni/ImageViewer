@@ -64,6 +64,7 @@ namespace ImageViewer
         private Bitmap LoadBitmap(string fileName)
         {
             FREE_IMAGE_LOAD_FLAGS flags = FREE_IMAGE_LOAD_FLAGS.DEFAULT;
+            using var counter = new PerformanceTimer(nameof(ImageLoader));
 
             // Rotate Jpegs if possible
             if (fileName.EndsWith("jpg", StringComparison.OrdinalIgnoreCase) || fileName.EndsWith("jpeg", StringComparison.OrdinalIgnoreCase))

@@ -50,13 +50,13 @@ namespace ImageViewer.Rendering
             _fadingIn = true;
 
             _timer = new Timer();
-            _timer.Tick += pMessageTimer_Tick;
+            _timer.Tick += MessageTimer_Tick;
             _interval = timeoutMS;
             _timer.Interval = MESSAGE_FADE_INTERVAL;
             _timer.Start();
         }
 
-        private void pMessageTimer_Tick(object sender, EventArgs e)
+        private void MessageTimer_Tick(object sender, EventArgs e)
         {
             if (_fadingIn)
             {
