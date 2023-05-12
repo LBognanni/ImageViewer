@@ -31,16 +31,8 @@ namespace ImageViewer
         {
             Debug.WriteLine($"Loading image: {Path.GetFileName(fileName)}");
             _lastImageToLoad = fileName;
-            var fastTask = Task.Run(async () =>
-            {
-                //await Task.Delay(100);
-                return _fastLoader.LoadImage(fileName);
-            });
-            var slowTask = Task.Run(async() =>
-            {
-                //await Task.Delay(1000);
-                return _slowLoader.LoadImage(fileName);
-            });
+            var fastTask = Task.Run(() => _fastLoader.LoadImage(fileName));
+            var slowTask = Task.Run(() => _slowLoader.LoadImage(fileName));
 
             var firstTask = await Task.WhenAny(slowTask, fastTask).ConfigureAwait(false);
      

@@ -55,6 +55,9 @@
     <Compile Update="ImageBox.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Update="Settings\frmSettings.cs">
+      <SubType>Form</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Content Include="icon.ico">
@@ -69,6 +72,7 @@
   <ItemGroup>
     <PackageReference Include="FreeImage-dotnet-core" Version="4.3.6" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Polly" Version="7.2.3" />
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
