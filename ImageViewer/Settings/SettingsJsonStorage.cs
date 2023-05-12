@@ -31,7 +31,7 @@ public class SettingsJsonStorage : ISettingsStorage
     public async Task SaveSettings(Settings settings)
     {
         var json = JsonConvert.SerializeObject(settings, Formatting.Indented);
-        using var fs = new FileStream(_settingsFile, FileMode.Open);
+        using var fs = new FileStream(_settingsFile, FileMode.Create);
         using var writer = new StreamWriter(fs, Encoding.UTF8);
         await writer.WriteAsync(json);
     }

@@ -31,7 +31,6 @@ partial class frmSettings
     /// </summary>
     private void InitializeComponent()
     {
-        System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(frmSettings));
         this.cmdOk = new System.Windows.Forms.Button();
         this.cmdCancel = new System.Windows.Forms.Button();
         this.groupBox1 = new System.Windows.Forms.GroupBox();
@@ -53,6 +52,7 @@ partial class frmSettings
         this.cmdOk.TabIndex = 0;
         this.cmdOk.Text = "&Ok";
         this.cmdOk.UseVisualStyleBackColor = true;
+        this.cmdOk.Click += new System.EventHandler(this.cmdOk_Click);
         // 
         // cmdCancel
         // 
@@ -150,7 +150,6 @@ partial class frmSettings
         this.Controls.Add(this.cmdCancel);
         this.Controls.Add(this.cmdOk);
         this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.SizableToolWindow;
-        this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
         this.Name = "frmSettings";
         this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
         this.Text = "Settings";

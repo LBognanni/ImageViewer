@@ -5,7 +5,7 @@ namespace ImageViewer;
 
 public partial class frmSettings : Form
 {
-    private ISettingsStorage _settingsStorage;
+    private readonly ISettingsStorage _settingsStorage;
     private readonly Settings _settings;
 
     public frmSettings(ISettingsStorage settingsStorage, Settings settings)
@@ -25,5 +25,6 @@ public partial class frmSettings : Form
         _settings.DefaultZoom = ddZoom.SelectedIndex;
         _settings.TransparentWhenOutOfFocus = cbTransparent.Checked;
         await _settingsStorage.SaveSettings(_settings).ConfigureAwait(false);
+        this.Close();
     }
 }

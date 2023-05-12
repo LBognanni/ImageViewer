@@ -1,20 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace ImageViewer
 {
     public partial class frmImageViewer : Form
     {
+        private readonly ISettingsStorage _settingsStorage;
+        private readonly Settings _settings;
+
         /// <summary>
         /// Current directory
         /// </summary>
@@ -33,9 +31,13 @@ namespace ImageViewer
         private string currentFile => _files[_fileIndex];
         public bool ShouldOpenAgain { get; private set; } = false;
 
-        public frmImageViewer(string fileName)
+        public frmImageViewer(string fileName, ISettingsStorage settingsStorage, Settings settings)
         {
+            _settingsStorage = settingsStorage;
+            _settings = settings;
             InitializeComponent();
+            ImageBox.DefaultZoom = settings.DefaultZoom;
+            
             var iconFile = Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "icon.ico");
             try
             {
@@ -90,6 +92,10 @@ namespace ImageViewer
             Activate();
             BringToFront();
             UpdateImage(1);
+            if (_settings.StartInFullScreen)
+            {
+                ToggleFullScreen();
+            }
             ImageBox.ShowMessage("Press H for help", 1000);
         }
 
@@ -192,12 +198,15 @@ namespace ImageViewer
                     ShouldOpenAgain = true;
                     Close();
                     return true;
+                
+                case Keys.P:
+                    ShowPreferences();
+                    break;
 
                 // [T] Toggle topmost
                 case Keys.T:
                     TopMost = !TopMost; 
                     ImageBox.ShowMessage($"Now {(TopMost ? "" : "not ")}Top most", 300);
-
                     return true;
 
                 case Keys.W:
@@ -267,6 +276,15 @@ namespace ImageViewer
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
+        private void ShowPreferences()
+        {
+            var form = new frmSettings(_settingsStorage, _settings);
+            if (form.ShowDialog() == DialogResult.OK)
+            {
+                ImageBox.DefaultZoom = _settings.DefaultZoom;
+            }
+        }
+
         private void Shuffle()
         {
             var r = new Random((int)DateTime.Now.ToFileTime());
@@ -312,15 +330,21 @@ namespace ImageViewer
         {
             base.OnDeactivate(e);
             try {
-                Opacity = _transparency;
-
-                if (_isClickThrough)
+                if (_settings.TransparentWhenOutOfFocus || _isClickThrough)
                 {
-                    var handle = new HandleRef(this, Handle);
-                    var initialStyle = InteropHelper.GetWindowLongPtr(handle, (int)InteropHelper.GWL.ExStyle).ToInt64();
-                    const long layeredTransparent = (long)InteropHelper.WS_EX.Layered | (long)InteropHelper.WS_EX.Transparent;
-                    var newStyle = initialStyle | layeredTransparent;
-                    var result = InteropHelper.SetWindowLongPtr(handle, (int)InteropHelper.GWL.ExStyle, new IntPtr(newStyle));
+                    Opacity = _transparency;
+
+                    if (_isClickThrough)
+                    {
+                        var handle = new HandleRef(this, Handle);
+                        var initialStyle = InteropHelper.GetWindowLongPtr(handle, (int)InteropHelper.GWL.ExStyle)
+                            .ToInt64();
+                        const long layeredTransparent =
+                            (long)InteropHelper.WS_EX.Layered | (long)InteropHelper.WS_EX.Transparent;
+                        var newStyle = initialStyle | layeredTransparent;
+                        var result = InteropHelper.SetWindowLongPtr(handle, (int)InteropHelper.GWL.ExStyle,
+                            new IntPtr(newStyle));
+                    }
                 }
             }
             catch { }
@@ -328,7 +352,6 @@ namespace ImageViewer
 
         private void ToggleFullScreen()
         {
-
             if (TopMost)
             {
                 TopMost = false;

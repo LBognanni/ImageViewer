@@ -161,10 +161,12 @@ namespace ImageViewer
             _image = img;
             _backgroundBrush.Dispose();
             _backgroundBrush = new SolidBrush(img.AverageColor);
-            _zoom = 0;
+            _zoom = DefaultZoom;
             Pan = new Point(0, 0);
             _rotation = 0;
             Invalidate();
         }
+
+        public decimal DefaultZoom { get; set; } = 0;
     }
 }

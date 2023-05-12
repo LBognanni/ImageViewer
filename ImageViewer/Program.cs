@@ -63,10 +63,14 @@ namespace ImageViewer
 
         class FileOpenContext : ApplicationContext
         {
+            private readonly ISettingsStorage _settingsStorage;
+            private readonly Settings _settings;
             private frmImageViewer _frmImageViewer;
 
-            public FileOpenContext(string fileName)
+            public FileOpenContext(string fileName, ISettingsStorage settingsStorage, Settings settings)
             {
+                _settingsStorage = settingsStorage;
+                _settings = settings;
                 ShowForm(fileName);
             }
 
@@ -75,7 +79,7 @@ namespace ImageViewer
                 fileName = GetFileToShow(fileName);
                 if (!string.IsNullOrEmpty(fileName))
                 {
-                    _frmImageViewer = new frmImageViewer(fileName);
+                    _frmImageViewer = new frmImageViewer(fileName, _settingsStorage, _settings);
                     _frmImageViewer.Location = Cursor.Position;
                     _frmImageViewer.FormClosed += _frmImageViewer_FormClosed;
                     _frmImageViewer.Show();
@@ -124,7 +128,7 @@ namespace ImageViewer
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             // Fix UHD displays
             if (Environment.OSVersion.Version.Major >= 6) SetProcessDPIAware();
@@ -141,7 +145,10 @@ namespace ImageViewer
                 }
             }
 
-            Application.Run(new FileOpenContext(fileName));
+            var settingsStorage = new SettingsJsonStorage();
+            var settings = await settingsStorage.LoadSettings();
+
+            Application.Run(new FileOpenContext(fileName, settingsStorage, settings));
         }
     }
 }
