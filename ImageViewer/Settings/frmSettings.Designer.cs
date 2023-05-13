@@ -152,7 +152,7 @@ partial class frmSettings
         this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.SizableToolWindow;
         this.Name = "frmSettings";
         this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-        this.Text = "Settings";
+        this.Text = "Preferences";
         this.groupBox1.ResumeLayout(false);
         this.groupBox1.PerformLayout();
         this.tableLayoutPanel1.ResumeLayout(false);

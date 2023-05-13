@@ -36,6 +36,7 @@ namespace ImageViewer
             _settingsStorage = settingsStorage;
             _settings = settings;
             InitializeComponent();
+            Opacity = 0;
             ImageBox.DefaultZoom = settings.DefaultZoom;
             
             var iconFile = Path.Combine(Path.GetDirectoryName(Application.ExecutablePath), "icon.ico");
@@ -51,6 +52,24 @@ namespace ImageViewer
 
             //this.KeyPreview = true;
             LoadImage(fileName);
+        }
+
+        /// <summary>
+        /// On first shown, focus the window.
+        /// Could be unfocused if an OpenFileDialog was first opened.
+        /// </summary>
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+            UpdateImage(1);
+            if (_settings.StartInFullScreen)
+            {
+                ToggleFullScreen(Screen.FromPoint(Cursor.Position));
+            }
+            Activate();
+            BringToFront();
+            Opacity = 1;
+            ImageBox.ShowMessage("Press H for help", 1000);
         }
 
         private void ImageBox_DoubleClick(object sender, EventArgs e)
@@ -80,23 +99,6 @@ namespace ImageViewer
                     break;
                 }
             }
-        }
-
-        /// <summary>
-        /// On first shown, focus the window.
-        /// Could be unfocused if an OpenFileDialog was first opened.
-        /// </summary>
-        protected override void OnShown(EventArgs e)
-        {
-            base.OnShown(e);
-            Activate();
-            BringToFront();
-            UpdateImage(1);
-            if (_settings.StartInFullScreen)
-            {
-                ToggleFullScreen();
-            }
-            ImageBox.ShowMessage("Press H for help", 1000);
         }
 
         private Timer _autoPlayTimer;
@@ -278,6 +280,11 @@ namespace ImageViewer
 
         private void ShowPreferences()
         {
+            if(TopMost)
+            {
+                ToggleFullScreen();
+            }
+
             var form = new frmSettings(_settingsStorage, _settings);
             if (form.ShowDialog() == DialogResult.OK)
             {
@@ -350,7 +357,7 @@ namespace ImageViewer
             catch { }
         }
 
-        private void ToggleFullScreen()
+        private void ToggleFullScreen(Screen which = null)
         {
             if (TopMost)
             {
@@ -360,7 +367,7 @@ namespace ImageViewer
             }
             else
             {
-                var screen = Screen.FromControl(this);
+                var screen = which ?? Screen.FromControl(this);
                 WindowState = FormWindowState.Normal;
                 FormBorderStyle = FormBorderStyle.None;
                 TopMost = true;

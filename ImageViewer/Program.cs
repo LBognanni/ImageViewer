@@ -128,7 +128,7 @@ namespace ImageViewer
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        static async Task Main(string[] args)
+        static void Main(string[] args)
         {
             // Fix UHD displays
             if (Environment.OSVersion.Version.Major >= 6) SetProcessDPIAware();
@@ -146,7 +146,7 @@ namespace ImageViewer
             }
 
             var settingsStorage = new SettingsJsonStorage();
-            var settings = await settingsStorage.LoadSettings();
+            var settings = settingsStorage.LoadSettings().Result;
 
             Application.Run(new FileOpenContext(fileName, settingsStorage, settings));
         }
