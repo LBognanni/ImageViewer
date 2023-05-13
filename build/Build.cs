@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Nuke.Common;
@@ -11,17 +10,13 @@ using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
 using Nuke.Common.Tooling;
 using Nuke.Common.Tools.DotNet;
-using Nuke.Common.Utilities.Collections;
-using static Nuke.Common.EnvironmentInfo;
 using static Nuke.Common.IO.FileSystemTasks;
-using static Nuke.Common.IO.PathConstruction;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 
 [TypeConverter(typeof(TypeConverter<Configuration>))]
 public class Configuration : Enumeration
 {
-    public static Configuration Debug = new Configuration { Value = nameof(Debug) };
-    public static Configuration Release = new Configuration { Value = nameof(Release) };
+    public static Configuration Release = new() { Value = nameof(Release) };
 
     public static implicit operator string(Configuration configuration)
     {
@@ -84,6 +79,7 @@ class Build : NukeBuild
                 .SetRuntime("win-x64")
                 .SetOutputDirectory(OutputDirectory)
                 .SetProperties(parametersDict)
+                .SetAssemblyVersion(version)
                 .EnableNoRestore());
 
             var sourceFile = Path.Combine(Solution.Directory,
