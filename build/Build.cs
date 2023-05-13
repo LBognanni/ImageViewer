@@ -80,6 +80,7 @@ class Build : NukeBuild
                 .SetOutputDirectory(OutputDirectory)
                 .SetProperties(parametersDict)
                 .SetAssemblyVersion(version)
+                .SetFileVersion(version)
                 .EnableNoRestore());
 
             var sourceFile = Path.Combine(Solution.Directory,
