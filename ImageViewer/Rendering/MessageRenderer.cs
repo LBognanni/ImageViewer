@@ -12,9 +12,9 @@ namespace ImageViewer.Rendering
     public class MessageRenderer
     {
 
-        private Timer _timer;
+        private Timer? _timer;
         private float _alpha;
-        private string _text;
+        private string? _text;
         private bool _fadingIn;
         private int _interval;
 

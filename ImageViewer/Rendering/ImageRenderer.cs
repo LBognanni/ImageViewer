@@ -9,8 +9,8 @@ namespace ImageViewer.Rendering
         private Bitmap _optimizedScreenSizeImage;
 
         private IRenderControl _control;
-        private string _optimizedImageFileName;
-        private int _optimizedImageRotation;
+        private string _optimizedImageFileName = "";
+        private int _optimizedImageRotation = 0;
 
         public ImageRenderer(IRenderControl control)
         {

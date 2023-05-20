@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -136,6 +137,19 @@ namespace ImageViewer
             var fileName = "";
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+
+            try
+            {
+                var checker = new VersionChecker(new GitHubVersionGetter(),
+                    Assembly.GetExecutingAssembly().GetName().Version, new WindowsNotification(),
+                    new FileBasedTempData());
+                Task.Run(() => checker.NotifyIfNewVersion());
+            }
+            catch(Exception e)
+            {
+                Debug.WriteLine($"Can't check new version: {e.Message}.");
+            }
+            
 
             if (args.Length > 0)
             {

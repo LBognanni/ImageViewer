@@ -357,7 +357,7 @@ namespace ImageViewer
             catch { }
         }
 
-        private void ToggleFullScreen(Screen which = null)
+        private void ToggleFullScreen(Screen? which = null)
         {
             if (TopMost)
             {

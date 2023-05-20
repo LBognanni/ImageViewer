@@ -25,7 +25,8 @@ public class SettingsJsonStorage : ISettingsStorage
         using var fs = new FileStream(_settingsFile, FileMode.Open);
         using var textReader = new StreamReader(fs, Encoding.UTF8);
         var json = await textReader.ReadToEndAsync().ConfigureAwait(false);
-        return JsonConvert.DeserializeObject<Settings>(json);
+        
+        return JsonConvert.DeserializeObject<Settings>(json)!;
     }
 
     public async Task SaveSettings(Settings settings)
@@ -33,6 +34,6 @@ public class SettingsJsonStorage : ISettingsStorage
         var json = JsonConvert.SerializeObject(settings, Formatting.Indented);
         using var fs = new FileStream(_settingsFile, FileMode.Create);
         using var writer = new StreamWriter(fs, Encoding.UTF8);
-        await writer.WriteAsync(json);
+        await writer.WriteAsync(json).ConfigureAwait(false);
     }
 }
