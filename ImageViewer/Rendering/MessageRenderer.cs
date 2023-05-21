@@ -58,6 +58,7 @@ namespace ImageViewer.Rendering
 
         private void MessageTimer_Tick(object sender, EventArgs e)
         {
+            var timer = (Timer)sender;
             if (_fadingIn)
             {
                 _alpha += MESSAGE_FADE_AMOUNT;
@@ -65,19 +66,19 @@ namespace ImageViewer.Rendering
                 if (_alpha >= 1)
                 {
                     _alpha = 1;
-                    _timer.Stop();
-                    _timer.Interval = _interval;
+                    timer.Stop();
+                    timer.Interval = _interval;
                     _fadingIn = false;
-                    _timer.Start();
+                    timer.Start();
                 }
             }
             else
             {
-                if (_timer.Interval != MESSAGE_FADE_INTERVAL)
+                if (timer.Interval != MESSAGE_FADE_INTERVAL)
                 {
-                    _timer.Stop();
-                    _timer.Interval = MESSAGE_FADE_INTERVAL;
-                    _timer.Start();
+                    timer.Stop();
+                    timer.Interval = MESSAGE_FADE_INTERVAL;
+                    timer.Start();
                 }
 
                 _alpha -= MESSAGE_FADE_AMOUNT;
@@ -85,7 +86,7 @@ namespace ImageViewer.Rendering
                 if (_alpha <= 0)
                 {
                     _text = "";
-                    _timer.Stop();
+                    timer.Stop();
                 }
             }
             _controlToInvalidate.Invalidate();
@@ -103,12 +104,7 @@ namespace ImageViewer.Rendering
                 return;
             }
 
-            if (_controlToInvalidate == null)
-            {
-                return;
-            }
-
-            var (strings, allTextRect) = PositionStringPieces(g);
+            var (strings, allTextRect) = PositionStringPieces(g, _text!);
             var offset = new PointF(_controlToInvalidate.Width / 2.0f - allTextRect.Width / 2.0f,
                 _controlToInvalidate.Height  - allTextRect.Height  - 20.0f);
 
@@ -128,12 +124,12 @@ namespace ImageViewer.Rendering
 
         }
 
-        private (List<PositionedStringPiece>, RectangleF) PositionStringPieces(Graphics g)
+        private (List<PositionedStringPiece>, RectangleF) PositionStringPieces(Graphics g, string text)
         {
             var strings = new List<PositionedStringPiece>();
-            if (_text.Contains("\t"))
+            if (text.Contains("\t"))
             {
-                var lines = _text
+                var lines = text
                     .Split("\r\n".ToCharArray(), StringSplitOptions.RemoveEmptyEntries)
                     .Select(s => GetRect(s, g).ToList()).ToList();
                 var columns = lines.Max(l => l.Count);
@@ -172,9 +168,9 @@ namespace ImageViewer.Rendering
                 return (strings, new RectangleF(minX, minY, maxW, maxH));
             }
 
-            var strSize = g.MeasureString(_text, _controlToInvalidate.Font);
+            var strSize = g.MeasureString(text, _controlToInvalidate.Font);
             var strPos = new PointF(0,0);
-            strings.Add(new PositionedStringPiece(new StringPiece(_text, 0, strSize), strPos));
+            strings.Add(new PositionedStringPiece(new StringPiece(text, 0, strSize), strPos));
             return (strings, new RectangleF(strPos, strSize));
         }
 

@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Windows.Forms;
+using Microsoft.VisualBasic.FileIO;
 
 namespace ImageViewer
 {
@@ -12,29 +15,91 @@ namespace ImageViewer
     {
         private readonly ISettingsStorage _settingsStorage;
         private readonly Settings _settings;
+        private readonly ITempData _tempData;
 
         /// <summary>
         /// Current directory
         /// </summary>
-        private string _directoryName;
+        private string _directoryName = "";
 
         /// <summary>
         /// List of files in the current directory
         /// </summary>
-        private string[] _files;
+        private List<string> _files;
 
         /// <summary>
         /// Current file
         /// </summary>
         private int _fileIndex;
 
-        private string currentFile => _files[_fileIndex];
+        private string CurrentFile => _files[_fileIndex];
         public bool ShouldOpenAgain { get; private set; } = false;
+        private readonly (string, string)[] _actionDescriptions;
 
-        public frmImageViewer(string fileName, ISettingsStorage settingsStorage, Settings settings)
+        public frmImageViewer(string fileName, ISettingsStorage settingsStorage, Settings settings, ITempData tempData)
         {
             _settingsStorage = settingsStorage;
             _settings = settings;
+            _tempData = tempData;
+            _files = new List<string>();
+
+            _defaultActions = new Dictionary<string, Action>()
+            {
+                { nameof(AutoPlay), AutoPlay },
+                { nameof(AutoPlayFaster), AutoPlayFaster },
+                { nameof(ToggleBorderless), ToggleBorderless },
+                { nameof(CopyFileName), CopyFileName },
+                { nameof(ToggleZoom), ToggleZoom },
+                { nameof(Transparency1), Transparency1 },
+                { nameof(Transparency2), Transparency2 },
+                { nameof(Transparency3), Transparency3 },
+                { nameof(Transparency4), Transparency4 },
+                { nameof(Transparency5), Transparency5 },
+                { nameof(ExitFullScreenOrClose), ExitFullScreenOrClose },
+                { nameof(ToggleFullScreen), ToggleFullScreen },
+                { nameof(ToggleHelpMessage), ToggleHelpMessage },
+                { nameof(PreviousImage), PreviousImage },
+                { nameof(ReOpen), ReOpen },
+                { nameof(ShowPreferences), ShowPreferences },
+                { nameof(Close), Close },
+                { nameof(RotateImage), RotateImage },
+                { nameof(RotateImageInv), RotateImageInv },
+                { nameof(NextImage), NextImage },
+                { nameof(Shuffle), Shuffle },
+                { nameof(AutoPlaySlower), AutoPlaySlower },
+                { nameof(ToggleTopMost), ToggleTopMost },
+                { nameof(ToggleClickThrough), ToggleClickThrough },
+                { nameof(DeleteCurrentFile), DeleteCurrentFile }
+            };
+            _actionDescriptions = new[]
+            {
+                ( nameof(AutoPlay), "Toggle Autoplay" ),
+                ( nameof(AutoPlayFaster), "Autoplay Faster" ),
+                ( nameof(AutoPlaySlower), "Autoplay Slower" ),
+                ( nameof(ToggleZoom), "Toggle Zoom" ),
+                ( nameof(CopyFileName), "Copy File Name" ),
+                ( nameof(PreviousImage), "Previous Image" ),
+                ( nameof(NextImage), "Next Image" ),
+                ( nameof(ToggleBorderless), "Toggle Borderless" ),
+                ( nameof(ToggleFullScreen), "Toggle FullScreen" ),
+                ( nameof(ToggleTopMost), "Toggle TopMost" ),
+                ( nameof(ToggleClickThrough), "Toggle ClickThrough" ),
+                ( nameof(Transparency1), "Transparency: 1/5" ),
+                ( nameof(Transparency2), "Transparency: 2/5" ),
+                ( nameof(Transparency3), "Transparency: 3/5" ),
+                ( nameof(Transparency4), "Transparency: 4/5" ),
+                ( nameof(Transparency5), "Transparency: 5/5" ),
+                ( nameof(ReOpen), "Show the Open dialog" ),
+                ( nameof(ShowPreferences), "Show Preferences" ),
+                ( nameof(RotateImage), "Rotate Image clockwise" ),
+                ( nameof(RotateImageInv), "Rotate Image counter-clockwise" ),
+                ( nameof(Shuffle), "Shuffle" ),
+                ( nameof(DeleteCurrentFile), "Delete Current File"),
+                ( nameof(Close), "Quit" ),
+                ( nameof(ToggleHelpMessage), "Show this help message" ),
+                //( nameof(ExitFullScreenOrClose), ExitFullScreenOrClose ),
+            };
+            
             InitializeComponent();
             Opacity = 0;
             ImageBox.DefaultZoom = settings.DefaultZoom;
@@ -83,15 +148,15 @@ namespace ImageViewer
         /// <param name="fileName"></param>
         protected void LoadImage(string fileName)
         {
-            _directoryName = Path.GetDirectoryName(fileName);
+            _directoryName = Path.GetDirectoryName(fileName)!;
 
             // Find all the images in the same directory as fileName
             _files = Program.Extensions.SelectMany(ext =>
                         Directory.GetFiles(_directoryName, ext))
-                        .OrderBy(f => f, StringComparer.CurrentCultureIgnoreCase).ToArray();
+                        .OrderBy(f => f, StringComparer.CurrentCultureIgnoreCase).ToList();
 
             // Find the index of fileName in pFiles
-            for (int i = 0; i < _files.Length; ++i)
+            for (int i = 0; i < _files.Count; ++i)
             {
                 if (_files[i].Equals(fileName, StringComparison.OrdinalIgnoreCase))
                 {
@@ -101,7 +166,9 @@ namespace ImageViewer
             }
         }
 
-        private Timer _autoPlayTimer;
+        private Timer? _autoPlayTimer;
+
+        private Dictionary<string, Action> _defaultActions;
 
         private void AutoPlay()
         {
@@ -111,7 +178,7 @@ namespace ImageViewer
                 {
                     Interval = 2000
                 };
-                _autoPlayTimer.Tick += (s, e) =>
+                _autoPlayTimer.Tick += (_, _) =>
                 {
                     NextImage();
                 };
@@ -135,147 +202,182 @@ namespace ImageViewer
         /// </summary>
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            switch (keyData)
+            if (_settings.TryGetKeyBindingFor(keyData, out var keyBinding))
             {
-                // Left: previous image
-                case Keys.Left:
-                    PreviousImage();
+                if (!string.IsNullOrEmpty(keyBinding.Action) && _defaultActions.TryGetValue(keyBinding.Action!, out var action))
+                {
+                    action();
                     return true;
-
-                // Right: next image
-                case Keys.Right:
-                    NextImage();
-                    return true;
-
-                // "R": Rotate image
-                case Keys.R:
-                    RotateImage();
-                    return true;
-                
-                // [shift][R]: Rotate image CCW
-                case Keys.R | Keys.Shift:
-                    RotateImageInv();
-                    return true;
-
-                case Keys.S:
-                    Shuffle();
-                    return true;
-                
-                // [F]: Toggle fullscreen
-                case Keys.F:
-                    ToggleFullScreen();
-                    return true;
-                
-                // [Esc] close topmost -> quit
-                case Keys.Escape:
-                    if (TopMost)
+                }
+                else if (!string.IsNullOrEmpty(keyBinding.Command))
+                {
+                    var command = string.Format(keyBinding.Command!, _files[_fileIndex]);
+                    try
                     {
-                        ToggleFullScreen();
+                        var (exe, parameters) = FileUtilites.SplitCommand(command);
+                        Process.Start(exe, parameters);
+                        if (keyBinding.IsDeleteAction)
+                        {
+                            RemoveFromIndex();
+                        }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        Close();
+                        MessageBox.Show($"Cannot run custom command: {ex.Message}.\r\n The command ran was:\r\n{command}", this.Text, MessageBoxButtons.OK,
+                            MessageBoxIcon.Error);
                     }
-                    return true;
-
-                // [H]: Show help text
-                case Keys.H:
-                    if (ImageBox.HasMessage)
-                    {
-                        ImageBox.HideMessage();
-                    }
-                    else
-                    {
-                        ImageBox.ShowMessage(Program.GetResource("helptext.txt"), 10000);
-                    }
-                    return true;
-
-                // [Q]: Quit
-                case Keys.Q:
-                    Close();
-                    return true;
-
-                // [O]: ReOpen
-                case Keys.O:
-                    ShouldOpenAgain = true;
-                    Close();
-                    return true;
-                
-                case Keys.P:
-                    ShowPreferences();
-                    break;
-
-                // [T] Toggle topmost
-                case Keys.T:
-                    TopMost = !TopMost; 
-                    ImageBox.ShowMessage($"Now {(TopMost ? "" : "not ")}Top most", 300);
-                    return true;
-
-                case Keys.W:
-                    ToggleClickThrough();
-                    break;
-
-                case Keys.D2:
-                    _transparency = .1;
-                    break;
-                case Keys.D3:
-                    _transparency = .2;
-                    break;
-                case Keys.D4:
-                    _transparency = .3;
-                    break;
-                case Keys.D5:
-                    _transparency = .5;
-                    break;
-                case Keys.D6:
-                    _transparency = .75;
-                    break;
-
-                // 1 : Switch between 100% and best fit
-                case Keys.D1:
-                    if(ImageBox.Zoom != 1)
-                    {
-                        ImageBox.Zoom = 1;
-                    }
-                    else
-                    {
-                        ImageBox.Zoom = 0;
-                        ImageBox.ResetTransform();
-                    }
-                    return true;
-                // [B]	Toggle borderless
-                case Keys.B:
-                    ToggleBorderless();
-                    return true;
-
-                // [C]	Copy file name
-                case Keys.C:
-                    Clipboard.SetText(currentFile);
-                    ImageBox.ShowMessage($"File name copied to clipboard", 300);
-                    return true;
-                // [A] Toggle autoplay
-                case Keys.A:
-                    AutoPlay();
-                    return true;
-                // [+] Autoplay faster
-                case Keys.Add:
-                    if(_autoPlayTimer!=null)
-                    {
-                        _autoPlayTimer.Interval =(int) ((float)_autoPlayTimer.Interval * 0.9f);
-                        ImageBox.ShowMessage($"Autoplay interval: {_autoPlayTimer.Interval}ms", 300);
-                    }
-                    break;
-                // [-] Autoplay slower
-                case Keys.Subtract:
-                    if (_autoPlayTimer != null)
-                    {
-                        _autoPlayTimer.Interval = (int)((float)_autoPlayTimer.Interval * 1.112f);
-                        ImageBox.ShowMessage($"Autoplay interval: {_autoPlayTimer.Interval}ms", 300);
-                    }
-                    break;
+                }
             }
 
             return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        private void RemoveFromIndex()
+        {
+            _files.RemoveAt(_fileIndex);
+            _fileIndex--;
+            NextImage();
+        }
+
+        private void Transparency5()
+        {
+            _transparency = .75;
+        }
+
+        private void Transparency4()
+        {
+            _transparency = .5;
+        }
+
+        private void Transparency3()
+        {
+            _transparency = .3;
+        }
+
+        private void Transparency2()
+        {
+            _transparency = .2;
+        }
+
+        private void Transparency1()
+        {
+            _transparency = .1;
+        }
+
+        private void AutoPlaySlower()
+        {
+            if (_autoPlayTimer != null)
+            {
+                _autoPlayTimer.Interval = (int)(_autoPlayTimer.Interval * 1.112f);
+                ImageBox.ShowMessage($"Autoplay interval: {_autoPlayTimer.Interval}ms", 300);
+            }
+        }
+
+        private void AutoPlayFaster()
+        {
+            if (_autoPlayTimer != null)
+            {
+                _autoPlayTimer.Interval = (int)(_autoPlayTimer.Interval * 0.9f);
+                ImageBox.ShowMessage($"Autoplay interval: {_autoPlayTimer.Interval}ms", 300);
+            }
+        }
+
+        private void CopyFileName()
+        {
+            Clipboard.SetText(CurrentFile);
+            ImageBox.ShowMessage($"File name copied to clipboard", 300);
+        }
+
+        private void ToggleZoom()
+        {
+            if (ImageBox.Zoom != 1)
+            {
+                ImageBox.Zoom = 1;
+            }
+            else
+            {
+                ImageBox.Zoom = 0;
+                ImageBox.ResetTransform();
+            }
+        }
+
+        private void ToggleTopMost()
+        {
+            TopMost = !TopMost;
+            ImageBox.ShowMessage($"Now {(TopMost ? "" : "not ")}Top most", 300);
+        }
+
+        private void ReOpen()
+        {
+            ShouldOpenAgain = true;
+            Close();
+        }
+
+        private void ToggleHelpMessage()
+        {
+            if (ImageBox.HasMessage)
+            {
+                ImageBox.HideMessage();
+            }
+            else
+            {
+                ImageBox.ShowMessage(GetHelpText(), 10000);
+            }
+        }
+
+        private string GetHelpText()
+        {
+            StringBuilder sb = new StringBuilder();
+            foreach (var (command, description) in _actionDescriptions)
+            {
+                var keyBinding = _settings.KeyBindings.First(x => x.Value.Action == command);
+                sb.AppendFormat("{0}\t{1}\r\n", FormatKey(keyBinding.Key), description);
+            }
+            return sb.ToString();
+        }
+
+        private string FormatKey(string key)
+        {
+            if (key.Contains('|'))
+            {
+                return String.Join("+",
+                    key.Split("|".ToCharArray(), StringSplitOptions.RemoveEmptyEntries).Select(FormatKey));
+            }
+
+            string k = key.ToLower() switch
+            {
+                "shift" => "⇧",
+                "left" => "←",
+                "right" => "→",
+                "add" => "+",
+                "subtract" => "-",
+                "d1" => "1",
+                "d2" => "2",
+                "d3" => "3",
+                "d4" => "4",
+                "d5" => "5",
+                "d6" => "6",
+                "d7" => "7",
+                "d8" => "8",
+                "d9" => "9",
+                "control" => "CTRL",
+                "controlkey" => "CTRL",
+                _ => key.ToUpper()
+            };
+
+            return $"[{k}]";
+        }
+
+        private void ExitFullScreenOrClose()
+        {
+            if (TopMost)
+            {
+                ToggleFullScreen();
+            }
+            else
+            {
+                Close();
+            }
         }
 
         private void ShowPreferences()
@@ -295,10 +397,10 @@ namespace ImageViewer
         private void Shuffle()
         {
             var r = new Random((int)DateTime.Now.ToFileTime());
-            _files = _files.OrderBy(x => r.Next()).ToArray();
+            _files = _files.OrderBy(_ => r.Next()).ToList();
         }
 
-        private bool _isClickThrough = false;
+        private bool _isClickThrough;
 
         private void ToggleClickThrough()
         {
@@ -327,6 +429,40 @@ namespace ImageViewer
             }
         }
 
+        private void DeleteCurrentFile()
+        {
+            var yesterday = DateTime.Now.AddDays(-1);
+            var dt = _tempData.Read<DateTime?>("LastAlertedOnDelete") ?? yesterday;
+            if (dt <= yesterday)
+            {
+                if (MessageBox.Show("Are you sure you want to delete the current file?", this.Text,
+                        MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) == DialogResult.Cancel)
+                {
+                    return;
+                }
+                _tempData.Write("LastAlertedOnDelete", DateTime.Now);
+            }
+            
+            if (_files.Count > 1)
+            {
+                try
+                {
+                    FileSystem.DeleteFile(_files[_fileIndex], UIOption.AllDialogs, RecycleOption.SendToRecycleBin);
+                    RemoveFromIndex();
+                }
+                catch (OperationCanceledException)
+                {
+                    // do nothing
+                }
+                catch (Exception e) 
+                {
+                    MessageBox.Show($"Can't delete this file: {e.Message}", "Image Viewer", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+
+            NextImage();
+        }
+
         protected override void OnActivated(EventArgs e)
         {
             base.OnActivated(e);
@@ -349,15 +485,19 @@ namespace ImageViewer
                         const long layeredTransparent =
                             (long)InteropHelper.WS_EX.Layered | (long)InteropHelper.WS_EX.Transparent;
                         var newStyle = initialStyle | layeredTransparent;
-                        var result = InteropHelper.SetWindowLongPtr(handle, (int)InteropHelper.GWL.ExStyle,
+                        InteropHelper.SetWindowLongPtr(handle, (int)InteropHelper.GWL.ExStyle,
                             new IntPtr(newStyle));
                     }
                 }
             }
-            catch { }
+            catch
+            {
+                // ignored
+            }
         }
 
-        private void ToggleFullScreen(Screen? which = null)
+        private void ToggleFullScreen() => ToggleFullScreen(null);
+        private void ToggleFullScreen(Screen? which)
         {
             if (TopMost)
             {
@@ -390,14 +530,14 @@ namespace ImageViewer
         {
             _fileIndex--;
             if (_fileIndex < 0)
-                _fileIndex = _files.Length - 1;
+                _fileIndex = _files.Count - 1;
             UpdateImage(-1);
         }
 
         private void NextImage()
         {
             _fileIndex++;
-            if (_fileIndex >= _files.Length)
+            if (_fileIndex >= _files.Count)
                 _fileIndex = 0;
             UpdateImage(1);
         }
@@ -405,10 +545,9 @@ namespace ImageViewer
         /// <summary>
         /// Cache timer, starts caching when the user is idle.
         /// </summary>
-        private Timer _timerCache = null;
-        private int _lastDirection = 0;
-        private int _cachedCount = 0;
-        //private long pLastImageSwitchTicks = 0;
+        private Timer? _timerCache;
+        private int _lastDirection;
+        private int _cachedCount;
 
         private void UpdateImage(int direction)
         {
@@ -425,10 +564,10 @@ namespace ImageViewer
                     if (_lastDirection != 0)
                     {
                         int iNext = _fileIndex + _lastDirection;
-                        if (iNext == _files.Length)
+                        if (iNext == _files.Count)
                             iNext = 0;
                         if (iNext < 0)
-                            iNext = _files.Length - 1;  
+                            iNext = _files.Count - 1;  
                     }
                     if(_cachedCount >= 3)
                     {
@@ -444,8 +583,8 @@ namespace ImageViewer
             // Stop the cache timer
             _timerCache.Stop();
 
-            Text = string.Format("{0} - Image Viewer", Path.GetFileName(currentFile));
-            ImageBox.LoadImage(currentFile);
+            Text = string.Format("{0} - Image Viewer", Path.GetFileName(CurrentFile));
+            ImageBox.LoadImage(CurrentFile);
 
             // Start caching timer 
             _cachedCount = 0;

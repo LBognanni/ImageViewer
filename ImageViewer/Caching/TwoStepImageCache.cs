@@ -54,7 +54,7 @@ namespace ImageViewer
                     }
                     
                     Debug.WriteLine("Replacing image with full res one");
-                    ReplaceImage(fileName, img);
+                    ReplaceImage(fileName, img!);
                 });
             }
             else

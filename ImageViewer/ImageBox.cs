@@ -15,7 +15,7 @@ namespace ImageViewer
         private readonly MessageRenderer _messageRenderer;
         private readonly ImageRenderer _imageRenderer;
         private readonly Policy _retryPolicy;
-        private ImageMeta _image;
+        private ImageMeta? _image;
 
         public ImageBox()
         {
@@ -79,7 +79,7 @@ namespace ImageViewer
         }
 
 
-        public void LoadImage(string fileName)
+        public void LoadImage(string? fileName)
         {
             if (fileName == null)
                 return;

@@ -35,7 +35,7 @@ public class VersionCheckerTests
         await _sut.NotifyIfNewVersion();
         _notifier.Verify(_notifierExpression, Times.Once);
         _tempData.Verify(x=>x.Read<DateTime>(VersionChecker.LASTNOTIFICATIONDATE), Times.Once);
-        _tempData.Verify(x=>x.Write<DateTime>(VersionChecker.LASTNOTIFICATIONDATE, It.IsAny<DateTime>()), Times.Once);
+        _tempData.Verify(x=>x.Write(VersionChecker.LASTNOTIFICATIONDATE, It.IsAny<DateTime>()), Times.Once);
     }
     
     [TestCase(2,0,0)]
@@ -63,7 +63,7 @@ public class VersionCheckerTests
     [Test]
     public async Task WhenThereWasAnErrorRetrievingVersion_ItDoesNotNotify()
     {
-        _versionGetter.Setup(x => x.GetLatestVersion()).ReturnsAsync((Version?)null);
+        _versionGetter.Setup(x => x.GetLatestVersion()).ReturnsAsync((Version)null);
         await _sut.NotifyIfNewVersion();
         _notifier.Verify(_notifierExpression, Times.Never);
         _tempData.Verify(x=>x.Read<DateTime>(VersionChecker.LASTNOTIFICATIONDATE), Times.Never);

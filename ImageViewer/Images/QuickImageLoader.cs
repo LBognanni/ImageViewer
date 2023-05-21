@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
+﻿using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using ImageViewer.Properties;
 
 namespace ImageViewer
 {
@@ -13,18 +10,19 @@ namespace ImageViewer
         {
             using var counter = new PerformanceTimer(nameof(QuickImageLoader));
             var bmp = LoadBitmap(fileName);
-            if(bmp != null)
-            {
-                bmp.FileName = fileName;
-                bmp.IsFullResolution = false;
-                bmp.AverageColor = GetAverageColor(bmp.Image);
-            }
-
+            bmp.FileName = fileName;
+            bmp.IsFullResolution = false;
+            bmp.AverageColor = GetAverageColor(bmp.Image);
             return bmp;
         }
 
-        private Color GetAverageColor(Bitmap image)
+        private Color GetAverageColor(Bitmap? image)
         {
+            if(image == null)
+            {
+                return Color.Black;
+            }
+            
             var colors = new[] {
                 image.GetPixel(0, 0),
                 image.GetPixel(0, image.Height-1),
@@ -44,19 +42,14 @@ namespace ImageViewer
             // Can we use a thumbnail and load asynchronously?
             // using the Windows API code pack
             // PM> Install -Package WindowsAPICodePack-Shell
-            using (Microsoft.WindowsAPICodePack.Shell.ShellFile file = Microsoft.WindowsAPICodePack.Shell.ShellFile.FromFilePath(fileName))
-            {
-                var img = file.Thumbnail.ExtraLargeBitmap;
-                if (img == null)
-                    return null;
+            using Microsoft.WindowsAPICodePack.Shell.ShellFile file = Microsoft.WindowsAPICodePack.Shell.ShellFile.FromFilePath(fileName);
+            var img = file.Thumbnail.ExtraLargeBitmap ?? (Resources.ResourceManager.GetObject("broken") as Bitmap)!;
 
-                return new ImageMeta
-                {
-                    Image = file.Thumbnail.ExtraLargeBitmap,
-                    ActualWidth = (int?)file.Properties.System?.Image?.HorizontalSize?.Value ?? img.Width,
-                    ActualHeight = (int?)file.Properties.System?.Image?.VerticalSize?.Value ?? img.Height
-                };
-            }
+            return new ImageMeta(img)
+            {
+                ActualWidth = (int?)file.Properties.System?.Image?.HorizontalSize?.Value ?? img.Width,
+                ActualHeight = (int?)file.Properties.System?.Image?.VerticalSize?.Value ?? img.Height
+            };
         }
     }
 

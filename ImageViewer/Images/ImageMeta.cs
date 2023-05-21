@@ -9,9 +9,13 @@ namespace ImageViewer
 {
     public class ImageMeta : IDisposable
     {
-        public Bitmap Image { get; set; }
+        public ImageMeta(Bitmap bmp)
+        {
+            Image = bmp;
+        }
+        public Bitmap Image { get; }
         public Color AverageColor { get; set; }
-        public string FileName { get; set; }
+        public string FileName { get; set; } = "";
         public bool IsFullResolution { get; set; }
         public int ActualWidth { get; set; }
         public int ActualHeight { get; set; }
@@ -19,11 +23,7 @@ namespace ImageViewer
 
         public void Dispose()
         {
-            if(Image!= null)
-            {
-                Image.Dispose();
-                Image = null;
-            }
+            Image.Dispose();
         }
     }
 }

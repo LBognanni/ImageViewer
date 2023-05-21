@@ -1,6 +1,7 @@
 ﻿using NUnit.Framework;
 using Moq;
 using System;
+using System.Drawing;
 using System.Threading.Tasks;
 
 namespace ImageViewer.Tests
@@ -14,7 +15,7 @@ namespace ImageViewer.Tests
             var mock = new Mock<IImageLoader>();
             mock
                 .Setup(l=>l.LoadImage(It.IsAny<string>()))
-                .Returns(new ImageMeta());
+                .Returns(new ImageMeta(new Bitmap(1,1)));
             ImageCache cache = new ImageCache(mock.Object, 1);
             cache.GetOrLoadImage("test.png");
             mock.Verify(m => m.LoadImage(It.IsAny<string>()), Times.Exactly(1));            
@@ -27,7 +28,7 @@ namespace ImageViewer.Tests
             var mock = new Mock<IImageLoader>();
             mock
                 .Setup(l => l.LoadImage(It.IsAny<string>()))
-                .Returns(new ImageMeta());
+                .Returns(new ImageMeta(new Bitmap(1,1)));
             
             ImageCache cache = new ImageCache(mock.Object, 1);
             cache.GetOrLoadImage("test.png");
@@ -41,7 +42,7 @@ namespace ImageViewer.Tests
             var mock = new Mock<IImageLoader>();
             mock
                 .Setup(l => l.LoadImage(It.IsAny<string>()))
-                .Returns(new ImageMeta());
+                .Returns(new ImageMeta(new Bitmap(1,1)));
 
             ImageCache cache = new ImageCache(mock.Object, 1);
             cache.GetOrLoadImage("test1.png");
@@ -57,7 +58,7 @@ namespace ImageViewer.Tests
             var mock = new Mock<IImageLoader>();
             mock
                 .Setup(l => l.LoadImage(It.IsAny<string>()))
-                .Returns(new ImageMeta());
+                .Returns(new ImageMeta(new Bitmap(1,1)));
 
             ImageCache cache = new ImageCache(mock.Object, 2);
             cache.GetOrLoadImage("test1.png");      // Cache = [test1(1)]
@@ -119,7 +120,7 @@ namespace ImageViewer.Tests
             loader.Setup(l => l.LoadImage(It.IsAny<string>())).Returns(() =>
               {
                   Task.Delay(delay).Wait();
-                  return new ImageMeta();
+                  return new ImageMeta(new Bitmap(1,1));
               });
             return loader;
         }

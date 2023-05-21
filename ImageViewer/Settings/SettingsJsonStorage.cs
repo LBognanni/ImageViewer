@@ -26,7 +26,7 @@ public class SettingsJsonStorage : ISettingsStorage
         using var textReader = new StreamReader(fs, Encoding.UTF8);
         var json = await textReader.ReadToEndAsync().ConfigureAwait(false);
         
-        return JsonConvert.DeserializeObject<Settings>(json)!;
+        return JsonConvert.DeserializeObject<Settings>(json, new JsonSerializerSettings(){ObjectCreationHandling = ObjectCreationHandling.Replace})!;
     }
 
     public async Task SaveSettings(Settings settings)

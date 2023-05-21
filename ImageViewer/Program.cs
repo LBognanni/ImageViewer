@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -49,29 +47,19 @@ namespace ImageViewer
      "*.xpm"
     };
 
-        /// <summary>
-        /// Load a resource from disk
-        /// </summary>
-        /// <param name="resourceName"></param>
-        /// <returns></returns>
-        public static string GetResource(string resourceName)
-        {
-            var mainAssembly = Assembly.GetExecutingAssembly();
-            using var resource = mainAssembly.GetManifestResourceStream($"{mainAssembly.GetName().Name}.{resourceName}");
-            using var sr = new StreamReader(resource);
-            return sr.ReadToEnd();
-        }
-
         class FileOpenContext : ApplicationContext
         {
             private readonly ISettingsStorage _settingsStorage;
             private readonly Settings _settings;
-            private frmImageViewer _frmImageViewer;
+            private readonly ITempData _tempData;
+            private frmImageViewer? _frmImageViewer;
+            public bool ShouldCloseImmediately { get; set; }
 
-            public FileOpenContext(string fileName, ISettingsStorage settingsStorage, Settings settings)
+            public FileOpenContext(string fileName, ISettingsStorage settingsStorage, Settings settings, ITempData tempData)
             {
                 _settingsStorage = settingsStorage;
                 _settings = settings;
+                _tempData = tempData;
                 ShowForm(fileName);
             }
 
@@ -80,14 +68,14 @@ namespace ImageViewer
                 fileName = GetFileToShow(fileName);
                 if (!string.IsNullOrEmpty(fileName))
                 {
-                    _frmImageViewer = new frmImageViewer(fileName, _settingsStorage, _settings);
+                    _frmImageViewer = new frmImageViewer(fileName, _settingsStorage, _settings, _tempData);
                     _frmImageViewer.Location = Cursor.Position;
                     _frmImageViewer.FormClosed += _frmImageViewer_FormClosed;
                     _frmImageViewer.Show();
                 }
                 else
                 {
-                    ExitThread();
+                    ShouldCloseImmediately = true;
                 }
             }
 
@@ -114,7 +102,7 @@ namespace ImageViewer
 
             private void _frmImageViewer_FormClosed(object sender, FormClosedEventArgs e)
             {
-                if (_frmImageViewer.ShouldOpenAgain)
+                if (_frmImageViewer?.ShouldOpenAgain ?? false)
                 {
                     ShowForm("");
                 }
@@ -137,19 +125,19 @@ namespace ImageViewer
             var fileName = "";
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            var tempData = new FileBasedTempData();
 
             try
             {
                 var checker = new VersionChecker(new GitHubVersionGetter(),
                     Assembly.GetExecutingAssembly().GetName().Version, new WindowsNotification(),
-                    new FileBasedTempData());
+                    tempData);
                 Task.Run(() => checker.NotifyIfNewVersion());
             }
             catch(Exception e)
             {
                 Debug.WriteLine($"Can't check new version: {e.Message}.");
             }
-            
 
             if (args.Length > 0)
             {
@@ -160,9 +148,38 @@ namespace ImageViewer
             }
 
             var settingsStorage = new SettingsJsonStorage();
-            var settings = settingsStorage.LoadSettings().Result;
+            Settings settings;
+            try
+            {
+                settings = settingsStorage.LoadSettings().Result;
+            }
+            catch (Exception ex)
+            {
+                if (MessageBox.Show(
+                        $"Unable to load settings. Load default settings instead?\r\nThis will overwrite any custom changes to your settings script.\r\n\r\nError: {GetErrorMessage(ex)}",
+                        "Image Viewer", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) == DialogResult.OK)
+                {
+                    settings = new Settings();
+                }
+                else
+                {
+                    return;
+                }
+            }
+            settingsStorage.SaveSettings(settings).Wait();
 
-            Application.Run(new FileOpenContext(fileName, settingsStorage, settings));
+            using var ctx = new FileOpenContext(fileName, settingsStorage, settings, tempData);
+            if (!ctx.ShouldCloseImmediately)
+            {
+                Application.Run(ctx);
+            }
+        }
+
+        private static string GetErrorMessage(Exception exception)
+        {
+            if (exception.InnerException != null)
+                return GetErrorMessage(exception.InnerException);
+            return exception.Message;
         }
     }
 }

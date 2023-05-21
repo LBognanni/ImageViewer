@@ -13,9 +13,8 @@ namespace ImageViewer
         {
             var bmp = LoadBitmap(fileName);
             Debug.WriteLine("Slow done!");
-            return new ImageMeta
+            return new ImageMeta(bmp)
             {
-                Image = bmp,
                 FileName = fileName,
                 IsFullResolution = true,
                 ActualHeight = bmp?.Height ?? 0,
@@ -24,7 +23,7 @@ namespace ImageViewer
             };
         }
 
-        private Color GetAverageColor(Bitmap bmp)
+        private Color GetAverageColor(Bitmap? bmp)
         {
             if(bmp == null)
             {
@@ -75,7 +74,7 @@ namespace ImageViewer
             // Load the image from disk
             try
             {
-                var bmp = new FreeImageBitmap(fileName, flags);
+                using var bmp = new FreeImageBitmap(fileName, flags);
 
                 // Convert the image to bitmap
                 if (bmp.ImageType != FREE_IMAGE_TYPE.FIT_BITMAP)
@@ -92,11 +91,11 @@ namespace ImageViewer
             {
                 try
                 {
-                    return Image.FromFile(fileName) as Bitmap;
+                    return (Bitmap)Image.FromFile(fileName);
                 }
                 catch
                 {
-                    return Properties.Resources.ResourceManager.GetObject("broken") as Bitmap;
+                    return (Resources.ResourceManager.GetObject("broken") as Bitmap)!;
                 }
             }
         }

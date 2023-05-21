@@ -37,7 +37,7 @@ public class FileBasedTempData : ITempData
         }
         else
         {
-            data[what] = JObject.FromObject(value);
+            data[what] = JObject.FromObject(value!);
         }
 
         File.WriteAllText(FileName, data.ToString());
@@ -52,17 +52,17 @@ public class FileBasedTempData : ITempData
 
         var json = File.ReadAllText(FileName);
         var o = JObject.Parse(json);
-        if (o[what] == null)
+        var prop = o[what];
+        if (prop == null)
             return default;
-
-
+        
         if (IsStraightValue<T>())
         {
-            return (o[what].ToObject<ValueWrapper<T>>()).Value;
+            return prop.ToObject<ValueWrapper<T>>()!.Value;
         }
         else
         {
-            return o[what].ToObject<T>();
+            return prop.ToObject<T>();
         }
     }
 

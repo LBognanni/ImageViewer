@@ -6,9 +6,9 @@ namespace ImageViewer.Rendering
 {
     public class ImageRenderer
     {
-        private Bitmap _optimizedScreenSizeImage;
+        private Bitmap? _optimizedScreenSizeImage;
 
-        private IRenderControl _control;
+        private readonly IRenderControl _control;
         private string _optimizedImageFileName = "";
         private int _optimizedImageRotation = 0;
 
@@ -19,9 +19,9 @@ namespace ImageViewer.Rendering
         
         public void Render(Graphics g, ImageMeta image)
         {
-            decimal zoom = _control.Zoom;
+            var zoom = _control.Zoom;
             int w, h;
-            bool useOptimizedImage = false;
+            var useOptimizedImage = false;
 
             if ((_control.Rotation == 0) || (_control.Rotation == 180))
             {
@@ -87,7 +87,7 @@ namespace ImageViewer.Rendering
                 _optimizedImageFileName = image.FileName;
                 _optimizedImageRotation = _control.Rotation;
             }
-            return _optimizedScreenSizeImage;
+            return _optimizedScreenSizeImage!;
         }
 
         private Bitmap ResizeBitmap(Bitmap imageImage, int newWidth, int newHeight)
