@@ -447,8 +447,10 @@ namespace ImageViewer
             {
                 try
                 {
-                    FileSystem.DeleteFile(_files[_fileIndex], UIOption.AllDialogs, RecycleOption.SendToRecycleBin);
+                    var fileName = _files[_fileIndex];
+                    FileSystem.DeleteFile(fileName, UIOption.AllDialogs, RecycleOption.SendToRecycleBin);
                     RemoveFromIndex();
+                    Debug.WriteLine($"Deleted file: {fileName}.");
                 }
                 catch (OperationCanceledException)
                 {
@@ -459,8 +461,6 @@ namespace ImageViewer
                     MessageBox.Show($"Can't delete this file: {e.Message}", "Image Viewer", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
-
-            NextImage();
         }
 
         protected override void OnActivated(EventArgs e)
