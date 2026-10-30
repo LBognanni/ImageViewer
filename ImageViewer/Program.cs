@@ -1,185 +1,72 @@
 ﻿using System;
-using System.Diagnostics;
 using System.IO;
-using System.Reflection;
 using System.Threading.Tasks;
-using System.Windows.Forms;
+using Avalonia;
+using SkiaSharp;
 
-namespace ImageViewer
+namespace ImageViewer;
+
+static class Program
 {
-    static class Program
+    /// <summary>
+    /// Used until the real screen size is known. Too large only costs a slightly slower first decode.
+    /// </summary>
+    private static readonly SKSizeI DefaultScreen = new(3840, 2160);
+
+    /// <summary>
+    /// The main entry point for the application.
+    /// </summary>
+    [STAThread]
+    static int Main(string[] args)
     {
-        [System.Runtime.InteropServices.DllImport("user32.dll")]
-        private static extern bool SetProcessDPIAware();
-
-        public static string[] Extensions = {
-     "*.bmp",
-     "*.dds",
-     "*.exr",
-     "*.gif",
-     "*.hdr",
-     "*.ico",
-     "*.iff",
-     "*.jbig",
-     "*.jng",
-     "*.jpeg",
-     "*.jif",
-     "*.jpg",
-     "*.koala",
-     "*.mng",
-     "*.pcx",
-     "*.pbm",
-     "*.pgm",
-     "*.ppm",
-     "*.pfm",
-     "*.png",
-     "*.pict",
-     "*.psd",
-     "*.raw",
-     "*.ras",
-     "*.sgi",
-     "*.tga",
-     "*.tiff",
-     "*.tif",
-     "*.wbmp",
-     "*.webp",
-     "*.xbm",
-     "*.xpm"
-    };
-
-        class FileOpenContext : ApplicationContext
+        if (args.Length == 2 && args[0] == "--bench")
         {
-            private readonly ISettingsStorage _settingsStorage;
-            private readonly Settings _settings;
-            private readonly ITempData _tempData;
-            private frmImageViewer? _frmImageViewer;
-            public bool ShouldCloseImmediately { get; set; }
-
-            public FileOpenContext(string fileName, ISettingsStorage settingsStorage, Settings settings, ITempData tempData)
-            {
-                _settingsStorage = settingsStorage;
-                _settings = settings;
-                _tempData = tempData;
-                ShowForm(fileName);
-            }
-
-            private void ShowForm(string fileName)
-            {
-                fileName = GetFileToShow(fileName);
-                if (!string.IsNullOrEmpty(fileName))
-                {
-                    _frmImageViewer = new frmImageViewer(fileName, _settingsStorage, _settings, _tempData);
-                    _frmImageViewer.Location = Cursor.Position;
-                    _frmImageViewer.FormClosed += _frmImageViewer_FormClosed;
-                    _frmImageViewer.Show();
-                }
-                else
-                {
-                    ShouldCloseImmediately = true;
-                }
-            }
-
-            private string GetFileToShow(string fileName)
-            {
-                if (!string.IsNullOrWhiteSpace(fileName) && File.Exists(fileName))
-                {
-                    return fileName;
-                }
-
-                var dlg = new OpenFileDialog
-                {
-                    Filter = "Image file |" + string.Join(";", Extensions),
-                    Title = "Select an image file"
-                };
-
-                if (dlg.ShowDialog() == DialogResult.OK)
-                {
-                    return dlg.FileName;
-                }
-
-                return "";
-            }
-
-            private void _frmImageViewer_FormClosed(object sender, FormClosedEventArgs e)
-            {
-                if (_frmImageViewer?.ShouldOpenAgain ?? false)
-                {
-                    ShowForm("");
-                }
-                else
-                {
-                    ExitThread();
-                }
-            }
+            return Bench.Run(args[1]);
         }
 
-        /// <summary>
-        /// The main entry point for the application.
-        /// </summary>
-        [STAThread]
-        static void Main(string[] args)
+        var decoder = new DecoderChain(new IImageDecoder[] { new SkiaImageDecoder() });
+
+        var settingsStorage = new SettingsJsonStorage();
+        Settings settings;
+        string? settingsError = null;
+        try
         {
-            // Fix UHD displays
-            if (Environment.OSVersion.Version.Major >= 6) SetProcessDPIAware();
-
-            var fileName = "";
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            var tempData = new FileBasedTempData();
-
-            try
-            {
-                var checker = new VersionChecker(new GitHubVersionGetter(),
-                    Assembly.GetExecutingAssembly().GetName().Version, new WindowsNotification(),
-                    tempData);
-                Task.Run(() => checker.NotifyIfNewVersion());
-            }
-            catch(Exception e)
-            {
-                Debug.WriteLine($"Can't check new version: {e.Message}.");
-            }
-
-            if (args.Length > 0)
-            {
-                if (File.Exists(args[0]))
-                {
-                    fileName = args[0];
-                }
-            }
-
-            var settingsStorage = new SettingsJsonStorage();
-            Settings settings;
-            try
-            {
-                settings = settingsStorage.LoadSettings().Result;
-            }
-            catch (Exception ex)
-            {
-                if (MessageBox.Show(
-                        $"Unable to load settings. Load default settings instead?\r\nThis will overwrite any custom changes to your settings script.\r\n\r\nError: {GetErrorMessage(ex)}",
-                        "Image Viewer", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) == DialogResult.OK)
-                {
-                    settings = new Settings();
-                }
-                else
-                {
-                    return;
-                }
-            }
-            settingsStorage.SaveSettings(settings).Wait();
-
-            using var ctx = new FileOpenContext(fileName, settingsStorage, settings, tempData);
-            if (!ctx.ShouldCloseImmediately)
-            {
-                Application.Run(ctx);
-            }
+            settings = settingsStorage.LoadSettings().Result;
+            Task.Run(() => settingsStorage.SaveSettings(settings));
+        }
+        catch (Exception ex)
+        {
+            settings = new Settings();
+            settingsError = GetErrorMessage(ex);
         }
 
-        private static string GetErrorMessage(Exception exception)
+        var pipeline = new ImagePipeline(decoder, ImagePipeline.DefaultBudget(), DefaultScreen, ImagePipeline.DefaultWorkers())
         {
-            if (exception.InnerException != null)
-                return GetErrorMessage(exception.InnerException);
-            return exception.Message;
+            PrefetchFull = settings.DefaultZoom != 0
+        };
+        var navigator = new Navigator(pipeline);
+
+        // Start decoding now: bringing up the UI takes longer than a scaled decode
+        if (args.Length > 0 && File.Exists(args[0]))
+        {
+            navigator.Open(Path.GetFullPath(args[0]));
         }
+
+        var services = new AppServices(navigator, pipeline, settingsStorage, settings, new FileBasedTempData(),
+            Platform.CreateTrash(), Platform.CreateClickThrough(), decoder.Extensions, settingsError);
+
+        var result = AppBuilder.Configure(() => new App(services))
+            .UsePlatformDetect()
+            .StartWithClassicDesktopLifetime(args);
+
+        pipeline.Dispose();
+        return result;
+    }
+
+    private static string GetErrorMessage(Exception exception)
+    {
+        if (exception.InnerException != null)
+            return GetErrorMessage(exception.InnerException);
+        return exception.Message;
     }
 }

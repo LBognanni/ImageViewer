@@ -65,16 +65,9 @@ Section "-MainSection" SEC01
   SetOutPath "$INSTDIR"
   SetOverwrite ifnewer
   File "..\output\ImageViewer.exe"
-  File "..\output\ImageViewer.exe.config"
-  File "..\output\icon.ico"
-  
-  File "..\output\System.ValueTuple.dll"
   File "..\output\*.dll"
   File "eula.txt"
-  File "freeimage-license.txt"
-  File "..\vcredist_x64.exe"
-  ExecWait "$INSTDIR\vcredist_x64.exe /install /passive"
-  
+
   CreateDirectory "$SMPROGRAMS\$ICONS_GROUP"
   CreateShortCut "$SMPROGRAMS\$ICONS_GROUP\${PRODUCT_NAME}.lnk" "$INSTDIR\ImageViewer.exe"
 SectionEnd
@@ -115,20 +108,13 @@ FunctionEnd
 Section Uninstall
   ReadRegStr $ICONS_GROUP ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "${PRODUCT_STARTMENU_REGVAL}"
   Delete "$INSTDIR\ImageViewer.exe"
+  Delete "$INSTDIR\*.dll"
+  Delete "$INSTDIR\eula.txt"
+  Delete "$INSTDIR\uninst.exe"
+
+  ; Left behind by versions before the Avalonia rebuild
   Delete "$INSTDIR\ImageViewer.exe.config"
   Delete "$INSTDIR\icon.ico"
-  Delete "$INSTDIR\System.ValueTuple.dll"
-  Delete "$INSTDIR\FreeImage.dll"
-  Delete "$INSTDIR\FreeImage-dotnet-core.dll"
-  Delete "$INSTDIR\Microsoft.WindowsAPICodePack.dll"
-  Delete "$INSTDIR\Microsoft.WindowsAPICodePack.Shell.dll"
-  Delete "$INSTDIR\Polly.dll"
-  Delete "$INSTDIR\System.Buffers.dll"
-  Delete "$INSTDIR\System.Memory.dll"
-  Delete "$INSTDIR\System.Numerics.Vectors.dll"
-  Delete "$INSTDIR\System.Resources.Extensions.dll"
-  Delete "$INSTDIR\System.Runtime.CompilerServices.Unsafe.dll"
-  Delete "$INSTDIR\eula.txt"
   Delete "$INSTDIR\freeimage-license.txt"
   Delete "$INSTDIR\vcredist_x64.exe"
 

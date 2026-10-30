@@ -1,4 +1,5 @@
-﻿using System;
+using NUnit.Framework.Legacy;
+using System;
 using System.Threading.Tasks;
 using NUnit.Framework;
 
@@ -19,7 +20,7 @@ public class GitHubVersionGetterTests
     public async Task GetLatestVersion_Works()
     {
         var version = await (new GitHubVersionGetter()).GetLatestVersion();
-        Assert.IsNotNull(version);
-        Assert.AreEqual(new Version(1,10,0), version);
+        ClassicAssert.IsNotNull(version);
+        ClassicAssert.AreEqual(new Version(1,10,0), version);
     }
 }

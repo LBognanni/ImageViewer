@@ -1,18 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Windows.Forms;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace ImageViewer;
 
 public class Settings
 {
-    [JsonIgnore]
     private Dictionary<string, KeyBinding>? _keyBindings;
-    [JsonIgnore]
-    private Dictionary<Keys, KeyBinding>? _keyBindingsLookup;
-    
+    private Dictionary<KeyCombination, KeyBinding>? _keyBindingsLookup;
+
     public bool StartInFullScreen { get; set; }
     public decimal DefaultZoom { get; set; }
     public bool TransparentWhenOutOfFocus { get; set; }
@@ -53,46 +50,33 @@ public class Settings
         };
     }
 
-    public bool TryGetKeyBindingFor(Keys keys, out KeyBinding keyBinding) =>
+    public bool TryGetKeyBindingFor(KeyCombination keys, out KeyBinding? keyBinding) =>
         _keyBindingsLookup!.TryGetValue(keys, out keyBinding);
 
-    
     public Dictionary<string, KeyBinding> KeyBindings
     {
         get => _keyBindings!;
         set
         {
             _keyBindings = value ?? throw new ArgumentNullException(nameof(KeyBindings));
-            
-            _keyBindingsLookup = value
-                .Select(x => new
-                {
-                    Key = ParseKeys(x.Key),
-                    x.Value
-                })
-                .Where(x => x.Key != null)
-                .ToDictionary(x => x.Key!.Value, x => x.Value);
-        }
-    }
 
-    private Keys? ParseKeys(string s)
-    {
-        var keys = s.Split("|".ToCharArray(), StringSplitOptions.RemoveEmptyEntries).Select(
-            x =>
+            // Two strings can now parse to the same keys, so the last one wins instead of throwing
+            _keyBindingsLookup = new Dictionary<KeyCombination, KeyBinding>();
+            foreach (var (keys, binding) in value.Select(x => (KeyParser.Parse(x.Key), x.Value)))
             {
-                if (Enum.TryParse(x, out Keys k))
+                if (keys != null)
                 {
-                    return (Keys?)k;
+                    _keyBindingsLookup[keys.Value] = binding;
                 }
-
-                return (Keys?)null;
-            }).ToList();
-        
-        if (keys.Any(x => x == null))
-        {
-            return null;
+            }
         }
-
-        return keys.Aggregate((a, b) => a! | b!);
     }
+}
+
+[JsonSourceGenerationOptions(WriteIndented = true, PropertyNameCaseInsensitive = true,
+    AllowTrailingCommas = true, ReadCommentHandling = System.Text.Json.JsonCommentHandling.Skip)]
+[JsonSerializable(typeof(Settings))]
+[JsonSerializable(typeof(Dictionary<string, DateTime>))]
+internal partial class AppJsonContext : JsonSerializerContext
+{
 }

@@ -20,6 +20,11 @@ public class GitHubVersionGetter : IVersionGetter
 
         using var client = new HttpClient(clientHandler);
         var response = await client.GetAsync("https://github.com/LBognanni/ImageViewer/releases/latest", HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+        if (response.Headers.Location == null)
+        {
+            return null;
+        }
+
         var latestVersion = response.Headers.Location.AbsolutePath.Split("/".ToCharArray(), StringSplitOptions.RemoveEmptyEntries).Last();
         if(Version.TryParse(latestVersion, out var v))
         {

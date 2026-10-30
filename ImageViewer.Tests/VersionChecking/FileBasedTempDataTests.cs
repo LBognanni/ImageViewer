@@ -1,59 +1,53 @@
-﻿using System;
-using System.Collections.Generic;
+using NUnit.Framework.Legacy;
+using System;
+using System.IO;
 using NUnit.Framework;
 
 namespace ImageViewer.Tests;
 
 public class FileBasedTempDataTests
 {
-    public static IEnumerable<object> RandomData()
-    {
-        yield return "a string";
-        yield return 1;
-        yield return (decimal)123.938493;
-        yield return DateTime.Today;
-        yield return DateTime.Now;
-        yield return DateTimeOffset.Now;
-        yield return new
-        {
-            SomeProperty = "SomeValue",
-            SomeIntProperty = 999
-        };
-    }
+    private string _file = null!;
 
-    [TestCaseSource(nameof(RandomData))]
-    public void AfterSavingTempData_CanReadItBack<T>(T data)
+    [SetUp]
+    public void Setup()
     {
-        var sut = new FileBasedTempData();
-        sut.EnsureEmpty();
-        sut.Write("test", data);
-        var readData = sut.Read<T>("test");
-        Assert.That(readData, Is.EqualTo(data));
+        _file = Path.Combine(Directory.CreateTempSubdirectory().FullName, "nested", "state.json");
     }
 
     [Test]
-    public void WhenNoData_DefaultIsReturned()
+    public void AfterSavingTempData_CanReadItBack()
     {
-        var sut = new FileBasedTempData();
-        sut.EnsureEmpty();
-        var n = sut.Read<int>("aa");
-        Assert.AreEqual(0, n);
-        
-        var s = sut.Read<string>("aab");
-        Assert.IsNull(s);
+        var sut = new FileBasedTempData(_file);
+        var now = DateTime.Now;
+        sut.WriteTime("test", now);
+        Assert.That(sut.ReadTime("test"), Is.EqualTo(now));
+    }
+
+    [Test]
+    public void WhenNoData_NullIsReturned()
+    {
+        ClassicAssert.IsNull(new FileBasedTempData(_file).ReadTime("aa"));
     }
 
     [Test]
     public void WhenSavingManyProperties_AllCanBeReadBack()
     {
-        var sut = new FileBasedTempData();
-        sut.EnsureEmpty();
-        sut.Write("a string", "hello");
-        sut.Write("an int", 1);
-        sut.Write("an object", new { Name = "Abc123", Age = 99 });
-        var s = sut.Read<string>("a string");
-        Assert.That(s, Is.EqualTo("hello"));
-        var i = sut.Read<int>("an int");
-        Assert.That(i, Is.EqualTo(1));
+        var sut = new FileBasedTempData(_file);
+        var first = new DateTime(2026, 1, 1);
+        var second = new DateTime(2026, 2, 2);
+        sut.WriteTime("first", first);
+        sut.WriteTime("second", second);
+        Assert.That(sut.ReadTime("first"), Is.EqualTo(first));
+        Assert.That(sut.ReadTime("second"), Is.EqualTo(second));
+    }
+
+    [Test]
+    public void ADamagedFile_IsTreatedAsEmpty()
+    {
+        var sut = new FileBasedTempData(_file);
+        sut.WriteTime("test", DateTime.Now);
+        File.WriteAllText(_file, "{ not json");
+        ClassicAssert.IsNull(sut.ReadTime("test"));
     }
 }

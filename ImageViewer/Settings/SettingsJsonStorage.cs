@@ -1,8 +1,7 @@
 ﻿using System;
 using System.IO;
-using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 
 namespace ImageViewer;
 
@@ -10,30 +9,44 @@ public class SettingsJsonStorage : ISettingsStorage
 {
     private readonly string _settingsFile;
 
-    public SettingsJsonStorage()
+    public SettingsJsonStorage() : this(GetDefaultPath())
     {
-        _settingsFile = Environment.ExpandEnvironmentVariables("%userprofile%\\codemade.imageviewer_settings.json");
     }
-    
+
+    public SettingsJsonStorage(string settingsFile)
+    {
+        _settingsFile = settingsFile;
+    }
+
+    private static string GetDefaultPath()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                "codemade.imageviewer_settings.json");
+        }
+
+        // ApplicationData is ~/.config (or $XDG_CONFIG_HOME) on Linux, and ~/Library/Application Support on macOS
+        var directory = OperatingSystem.IsMacOS() ? "ImageViewer" : "imageviewer";
+        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), directory, "settings.json");
+    }
+
     public async Task<Settings> LoadSettings()
     {
         if (!File.Exists(_settingsFile))
         {
             return new Settings();
         }
-        
-        using var fs = new FileStream(_settingsFile, FileMode.Open);
-        using var textReader = new StreamReader(fs, Encoding.UTF8);
-        var json = await textReader.ReadToEndAsync().ConfigureAwait(false);
-        
-        return JsonConvert.DeserializeObject<Settings>(json, new JsonSerializerSettings(){ObjectCreationHandling = ObjectCreationHandling.Replace})!;
+
+        var json = await File.ReadAllTextAsync(_settingsFile).ConfigureAwait(false);
+        return JsonSerializer.Deserialize(json, AppJsonContext.Default.Settings)
+               ?? throw new JsonException("The settings file is empty");
     }
 
     public async Task SaveSettings(Settings settings)
     {
-        var json = JsonConvert.SerializeObject(settings, Formatting.Indented);
-        using var fs = new FileStream(_settingsFile, FileMode.Create);
-        using var writer = new StreamWriter(fs, Encoding.UTF8);
-        await writer.WriteAsync(json).ConfigureAwait(false);
+        var json = JsonSerializer.Serialize(settings, AppJsonContext.Default.Settings);
+        Directory.CreateDirectory(Path.GetDirectoryName(_settingsFile)!);
+        await File.WriteAllTextAsync(_settingsFile, json).ConfigureAwait(false);
     }
 }

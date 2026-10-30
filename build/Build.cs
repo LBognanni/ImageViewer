@@ -1,16 +1,13 @@
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Nuke.Common;
-using Nuke.Common.Execution;
-using Nuke.Common.Git;
 using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
 using Nuke.Common.Tooling;
 using Nuke.Common.Tools.DotNet;
-using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
 
 [TypeConverter(typeof(TypeConverter<Configuration>))]
@@ -24,8 +21,6 @@ public class Configuration : Enumeration
     }
 }
 
-[CheckBuildProjectConfigurations]
-[UnsetVisualStudioEnvironmentVariables]
 class Build : NukeBuild
 {
     /// Support plugins are available for:
@@ -34,71 +29,62 @@ class Build : NukeBuild
     ///   - Microsoft VisualStudio     https://nuke.build/visualstudio
     ///   - Microsoft VSCode           https://nuke.build/vscode
 
-    public static int Main () => Execute<Build>(x => x.Compile);
+    public static int Main () => Execute<Build>(x => x.Publish);
 
-    [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
+    [Parameter("Configuration to build - Default is 'Release'")]
     readonly Configuration Configuration = Configuration.Release;
 
+    [Parameter("Runtime to publish for, e.g. win-x64 - Default is this machine's. Native AOT can't cross-compile between operating systems.")]
+    readonly string Runtime = GetPortableRuntime();
+
     [Solution] readonly Solution Solution;
-    [GitRepository] readonly GitRepository GitRepository;
 
     AbsolutePath OutputDirectory => RootDirectory / "output";
 
     Target Clean => _ => _
-        .Before(Restore)
         .Executes(() =>
         {
-            EnsureCleanDirectory(OutputDirectory);
+            OutputDirectory.CreateOrCleanDirectory();
         });
 
-    Target Restore => _ => _
+    Target Test => _ => _
         .Executes(() =>
         {
-            DotNetRestore(s => s
-                .SetPackageDirectory(Path.Combine(Solution.Directory, "packages"))
-                .SetPlatform("x64")
-                .SetRuntime("win-x64")
-                .SetProjectFile(Solution));
+            DotNetTest(s => s
+                .SetProjectFile(Solution.Projects.First(x => x.Name == "ImageViewer.Tests")));
         });
 
-    Target Compile => _ => _
-        .DependsOn(Restore)
+    Target Publish => _ => _
+        .After(Clean)
         .Executes(() =>
         {
-            var parametersDict = new Dictionary<string, object>();
             var version = Environment.GetEnvironmentVariable("VERSION");
-            if (!string.IsNullOrEmpty(version))
-            {
-                parametersDict.Add("Version", version!);                
-            }
-            
-            DotNetBuild(s => s
-                .SetProjectFile(Solution.Projects.First(x=>x.Name == "ImageViewer"))
-                .SetConfiguration(Configuration)
-                .SetPlatform("x64")
-                .SetRuntime("win-x64")
-                .SetOutputDirectory(OutputDirectory)
-                .SetProperties(parametersDict)
-                .SetAssemblyVersion(version)
-                .SetFileVersion(version)
-                .EnableNoRestore());
 
-            var sourceFile = Path.Combine(Solution.Directory,
-                @"packages\freeimage-dotnet-core\4.3.6\runtimes\win7-x64\native\FreeImage.dll".Replace('\\',
-                    Path.DirectorySeparatorChar));
-            if (!File.Exists(sourceFile))
-            {
-                sourceFile = "~/.nuget/packages/freeimage-dotnet-core/4.3.6/runtimes/win7-x64/native/FreeImage.dll";
-                if (!File.Exists(sourceFile))
-                {
-                    throw new Exception($"Can't find freeImage.dll in {sourceFile}");
-                }
-            }
-            
-            CopyFile(
-                sourceFile, 
-                Path.Combine(Solution.Directory, "output\\FreeImage.dll".Replace('\\', Path.DirectorySeparatorChar)), 
-                FileExistsPolicy.Overwrite);
+            DotNetPublish(s => s
+                .SetProject(Solution.Projects.First(x => x.Name == "ImageViewer"))
+                .SetConfiguration(Configuration)
+                .SetRuntime(Runtime)
+                .SetOutput(OutputDirectory)
+                .When(_ => !string.IsNullOrEmpty(version), o => o
+                    .SetVersion(version)
+                    .SetAssemblyVersion(version)
+                    .SetFileVersion(version))
+                .When(_ => NeedsGccToLink(), o => o
+                    .SetProperty("CppCompilerAndLinker", "gcc")));
         });
 
+    /// <summary>
+    /// RuntimeInformation.RuntimeIdentifier can be specific to a distro, like ubuntu.24.04-x64
+    /// </summary>
+    static string GetPortableRuntime()
+    {
+        var os = OperatingSystem.IsWindows() ? "win" : OperatingSystem.IsMacOS() ? "osx" : "linux";
+        return $"{os}-{RuntimeInformation.OSArchitecture.ToString().ToLowerInvariant()}";
+    }
+
+    /// <summary>
+    /// Native AOT links with clang by default
+    /// </summary>
+    static bool NeedsGccToLink() =>
+        OperatingSystem.IsLinux() && !File.Exists("/usr/bin/clang") && File.Exists("/usr/bin/gcc");
 }

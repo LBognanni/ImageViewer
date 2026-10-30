@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+using NUnit.Framework.Legacy;
+using System.Collections.Generic;
 using NUnit.Framework;
 
 namespace ImageViewer.Tests;
@@ -9,8 +10,8 @@ public class FileUtilitesTests
     public void SplitCommand_WorksAsExpected(string command, string expectedExe, string expectedParams)
     {
         var (exe, parameters) = FileUtilites.SplitCommand(command);
-        Assert.AreEqual(expectedExe, exe);
-        Assert.AreEqual(expectedParams, parameters);
+        ClassicAssert.AreEqual(expectedExe, exe);
+        ClassicAssert.AreEqual(expectedParams, parameters);
     }
 
     private static IEnumerable<string[]> GetSplitCases()

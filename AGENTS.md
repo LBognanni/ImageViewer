@@ -4,58 +4,80 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Fast, private Windows image viewer: a WinForms app targeting .NET Framework (`net472`, x64). Image decoding uses FreeImage (native `FreeImage.dll`) and Windows Shell thumbnails, so the app and its tests only run on Windows. The solution can be compiled on Linux, which is how CI builds it.
+Fast, private image viewer for Windows, Linux and macOS: an Avalonia app on .NET 10, published with Native AOT. **The design goal is the fastest possible browsing of folders of high-resolution pictures**, so judge changes by the time from keypress to sharp image, and measure rather than assume.
 
 ## Commands
 
-The build is a NUKE project in `build/`. It pins the .NET SDK to 6.0.104 through `global.json`.
+The build is a NUKE project in `build/`.
 
 ```sh
-./build.sh                # Linux/macOS: restore + compile (default target)
-./build.ps1               # Windows
-./build.sh --target Clean # empties output/
+./build.sh                      # Linux/macOS: publish for this machine (default target)
+./build.ps1                     # Windows
+./build.sh --target Clean       # empties output/
+./build.sh --runtime osx-arm64  # another architecture of the same OS
 ```
 
-Output goes to `output/`, always as Release for `win-x64`. The `Compile` target only builds the `ImageViewer` project, not the tests, and also copies `FreeImage.dll` into `output/`. Set the `VERSION` env var to stamp the assembly version.
+Output goes to `output/`, always as Release. Native AOT can't cross-compile between operating systems. Set the `VERSION` env var to stamp the assembly version. Linux publishing needs clang or gcc, and zlib headers.
 
-Tests are NUnit with Moq and are not run by the NUKE build or CI, so run them manually on Windows:
+Tests are NUnit with Moq and run on any OS, without a display:
 
 ```sh
 dotnet test ImageViewer.Tests
-dotnet test ImageViewer.Tests --filter "FullyQualifiedName~ImageCacheTests"
+dotnet test ImageViewer.Tests --filter "FullyQualifiedName~ImageStoreTests"
+```
+
+`ViewerWindowTests` drives the real window through Avalonia's headless platform. Use it for UI behaviour rather than sending input to a desktop session.
+
+To measure the pipeline, publish and then run:
+
+```sh
+output/ImageViewer --bench <folder with at least 8 images>
 ```
 
 ## Release process
 
-Every push to `master` triggers `.github/workflows/build.yml`, which tags a new version, builds, packages the NSIS installer (`Setup/ImageViewer_setup.nsi`) and publishes a GitHub release. The version bump comes from the commit message: `#patch`, `#minor`, `#major`, or `#none` to skip it.
+Every push to `master` triggers `.github/workflows/build.yml`, which tags a new version, then tests and builds on Windows, Linux and macOS, and publishes a GitHub release with the NSIS installer, a Linux tarball and macOS zips. The version bump comes from the commit message: `#patch`, `#minor`, `#major`, or `#none` to skip it.
 
 ## Architecture
 
-**Image loading pipeline.** `frmImageViewer` holds the file list for the current directory and calls `ImageBox.LoadImage`. `ImageBox` owns a `TwoStepImageCache`, which starts two loaders concurrently:
+**Startup.** `Program.Main` is the composition root. It starts decoding the opened file before Avalonia starts, because bringing up the UI takes longer than a scaled decode. The window lists the folder in the background, so large folders don't delay the first image. Fluent is only loaded when a dialog first opens (`App.EnsureDialogTheme`): the main window draws everything itself and needs no theme.
 
-- `QuickImageLoader`: Windows Shell thumbnail, low resolution.
-- `ImageLoader`: full-resolution decode through FreeImage.
+**Image pipeline (`Pipeline/`).** `ImagePipeline` decides what gets decoded. Each image has up to three tiers (`ImageTier`):
 
-Whichever finishes first is pushed to the `IReceiveImage` receiver (`ImageBox`). If the thumbnail won, the full image replaces it once ready, after a minimum delay of 180ms. Results are dropped if the user has navigated away (`_lastImageToLoad`). `TwoStepImageCache` wraps an `ImageCache` (bounded LRU-style cache that disposes evicted `ImageMeta`) and passes itself in as that cache's `IImageLoader`.
+- `Instant`: the cheapest decode the format offers, e.g. JPEG at 1/8 through DCT scaling.
+- `Screen`: at least the size of the largest monitor, so resizing doesn't invalidate it.
+- `Full`: only when the view zooms past `Screen`, or up front if the default zoom is actual size.
 
-**Rendering.** `ImageBox` is a custom-drawn `Control` that implements `IRenderControl`. It delegates drawing to `Rendering/ImageRenderer` and `Rendering/MessageRenderer` (on-screen overlay messages).
+`Navigator` calls `SetWindow` with the current file and the files to prefetch, most urgent first. That replaces the whole pending list, so a held arrow key can't build a backlog; only running decodes finish. In rapid navigation, `Instant` jobs go first.
 
-**Keyboard actions.** `Settings.KeyBindings` maps key strings (`Keys` enum names, combined with `|`, e.g. `Shift|R`) to a `KeyBinding`, which either names an action or holds a custom shell `Command` (`{0}` is replaced by the current file; `IsDeleteAction` removes it from the list afterwards). `frmImageViewer.ProcessCmdKey` dispatches these.
+`ImageStore` holds images to a byte budget and evicts by distance from the current image, not by last use.
+
+`ImageHandle` is a ref-counted lease on the pixels. The render thread can still be drawing after eviction, so never dispose an image directly: use `TryAcquire` and `Release`.
+
+**Decoders (`Decoding/`).** `IImageDecoder` implementations go in the `DecoderChain` built in `Program.Main`, and their extensions become the formats the app lists. `SkiaImageDecoder` is the only one so far. SkiaSharp's libjpeg-turbo has no SIMD, and Magick.NET isn't faster once pixels are in BGRA, so a libjpeg-turbo binding is the known way to get faster JPEG decodes; Magick.NET would add formats, not speed.
+
+**Rendering (`Viewer/`).** `ImageSurface` holds zoom, pan and rotation, and picks the best image available. `ImageDrawOperation` draws on the render thread through Skia. Images are drawn as GPU textures held by `TextureCache`, because a large image drawn from CPU memory costs over 100ms per frame. `ImageSurface` uploads the next image while idle. EXIF orientation and rotation are transforms at draw time (`ViewGeometry`), never pixel work. Geometry is in physical pixels, so actual size is correct at any display scaling. `MessageOverlay` is a separate control so that fading messages don't redraw the image.
+
+**Keyboard actions.** `Settings.KeyBindings` maps key strings (combined with `|`, e.g. `Shift|R`) to a `KeyBinding`, which either names an action or holds a custom shell `Command` (`{0}` is replaced by the current file; `IsDeleteAction` removes it from the list afterwards). `KeyParser` reads them; the names began as WinForms `Keys` values, and existing settings files must keep working. `ViewerWindow.OnKeyDown` dispatches them.
 
 To add an action, update all of:
 
-1. `_defaultActions` in `frmImageViewer` (the action name to method map).
-2. `_actionDescriptions` in `frmImageViewer` (the help overlay).
+1. `_defaultActions` in `ViewerWindow` (the action name to method map).
+2. `_actionDescriptions` in `ViewerWindow` (the help overlay).
 3. The default bindings in the `Settings` constructor.
 
 Saved settings replace the default bindings entirely, so users with an existing settings file don't get new defaults. `GetHelpText` leaves actions with no binding out of the help overlay.
 
-**Settings and state.** Settings are JSON in `%userprofile%\codemade.imageviewer_settings.json`, loaded and re-saved at startup by `SettingsJsonStorage`. `ITempData` (`FileBasedTempData`) stores small transient values, such as the last delete confirmation time.
+**Platform services (`Platform/`).** `ITrash` and `IClickThrough` have one implementation per OS, chosen by the `Platform` factory. Linux click-through goes through X11, and Linux trash through `gio` or `kioclient`. `ITrash` must never fall back to deleting permanently.
 
-**Version checking.** `VersionChecker` runs in the background at startup, using `IVersionGetter` (GitHub releases) and `IWindowsNotification` (toast), at most once a day. The concrete implementations live in the same files as their interfaces under `VersionChecking/`.
+**Settings and state.** Settings are JSON, in `%userprofile%\codemade.imageviewer_settings.json` on Windows, `$XDG_CONFIG_HOME/imageviewer/settings.json` on Linux, and `~/Library/Application Support/ImageViewer/settings.json` on macOS. `ITempData` (`FileBasedTempData`) stores small transient values, such as the last delete confirmation time, in per-user app data.
+
+**Version checking.** After startup, `App` runs `VersionChecker` in the background, at most once a day, using `IVersionGetter` (GitHub releases) and `IUpdateNotifier`. `App` implements the notifier: the message appears in the overlay, and Enter opens the release page while it's showing.
 
 ## Conventions
 
 - Dependencies are constructor-injected through interfaces so logic can be tested with Moq; `Program.Main` is the composition root.
-- `ImageViewer` builds with nullable reference types enabled.
+- Everything must work under Native AOT: no reflection-based JSON (add types to `AppJsonContext`) and no XAML loaded at runtime. Windows are built in code.
+- `Pipeline/` and `Navigator` must stay free of Avalonia types.
+- Nullable reference types are enabled in `ImageViewer`.
 - `ImageViewer.Tests/testimages` holds fixture images copied to the test output directory.
