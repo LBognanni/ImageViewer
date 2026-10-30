@@ -330,8 +330,12 @@ namespace ImageViewer
             StringBuilder sb = new StringBuilder();
             foreach (var (command, description) in _actionDescriptions)
             {
-                var keyBinding = _settings.KeyBindings.First(x => x.Value.Action == command);
-                sb.AppendFormat("{0}\t{1}\r\n", FormatKey(keyBinding.Key), description);
+                var keyBinding = _settings.KeyBindings.FirstOrDefault(x => x.Value.Action == command);
+                // Settings saved by older versions may not have a binding for every action
+                if (keyBinding.Key != null)
+                {
+                    sb.AppendFormat("{0}\t{1}\r\n", FormatKey(keyBinding.Key), description);
+                }
             }
             return sb.ToString();
         }
