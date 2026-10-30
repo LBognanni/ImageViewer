@@ -22,6 +22,7 @@ packages
 .idea
 .tmp
 output
+dist
 temp
 /ImageViewer/Properties/launchSettings.json
 /Setup/ImageViewer_Setup.exe

@@ -40,7 +40,7 @@ git tag 2.0.0
 git push origin 2.0.0
 ```
 
-The tag sets the version, and a draft GitHub release is created with the NSIS installer, a Linux tarball and macOS dmgs. It stays invisible to users until it's published on GitHub.
+The tag sets the version, and a draft GitHub release is created with the NSIS installer, a Linux tarball and AppImage, and macOS dmgs. It stays invisible to users until it's published on GitHub.
 
 A tag with a suffix, like `2.0.0-rc1`, drafts a prerelease. GitHub's latest release skips those, so update notices ignore them.
 
