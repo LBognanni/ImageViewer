@@ -68,7 +68,7 @@ To add an action, update all of:
 
 Saved settings replace the default bindings entirely, so users with an existing settings file don't get new defaults. `GetHelpText` leaves actions with no binding out of the help overlay.
 
-**Platform services (`Platform/`).** `ITrash` and `IClickThrough` have one implementation per OS, chosen by the `Platform` factory. Linux click-through goes through X11, and Linux trash through `gio` or `kioclient`. `ITrash` must never fall back to deleting permanently.
+**Platform services (`Platform/`).** `ITrash`, `IClickThrough` and `IWindowOpacity` have one implementation per OS, chosen by the `Platform` factory. Linux click-through and opacity go through X11, and Linux trash through `gio` or `kioclient`. `ITrash` must never fall back to deleting permanently. Don't fade the window with `Window.Opacity`: it doesn't apply to `ImageDrawOperation`, and the compositor can fade the window without a redraw.
 
 **Settings and state.** Settings are JSON, in `%userprofile%\codemade.imageviewer_settings.json` on Windows, `$XDG_CONFIG_HOME/imageviewer/settings.json` on Linux, and `~/Library/Application Support/ImageViewer/settings.json` on macOS. `ITempData` (`FileBasedTempData`) stores small transient values, such as the last delete confirmation time, in per-user app data.
 

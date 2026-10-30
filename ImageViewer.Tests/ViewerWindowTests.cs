@@ -42,9 +42,10 @@ public class ViewerWindowTests
     private Settings _settings = null!;
     private FakeTrash _trash = null!;
     private Mock<IClickThrough> _clickThrough = null!;
+    private FakeWindowOpacity _windowOpacity = null!;
     private ViewerWindow _sut = null!;
 
-    private void Open(string first = "a.jpg", Settings? settings = null)
+    private void Open(string first = "a.jpg", Settings? settings = null, bool compositorFades = true)
     {
         _folder = Directory.CreateTempSubdirectory("imageviewer-ui").FullName;
         byte index = 0;
@@ -61,13 +62,14 @@ public class ViewerWindowTests
         _trash = new FakeTrash();
         _clickThrough = new Mock<IClickThrough>();
         _clickThrough.Setup(c => c.TrySet(It.IsAny<IPlatformHandle>(), It.IsAny<bool>())).Returns(true);
+        _windowOpacity = new FakeWindowOpacity { Works = compositorFades };
 
         var tempData = new Mock<ITempData>();
         tempData.Setup(t => t.ReadTime(It.IsAny<string>())).Returns(DateTime.Now);
 
         _navigator.Open(Path.Combine(_folder, first));
         _sut = new ViewerWindow(_navigator, _pipeline, new Mock<ISettingsStorage>().Object, _settings, tempData.Object,
-            _trash, _clickThrough.Object, decoder.Extensions, null, () => { });
+            _trash, _clickThrough.Object, _windowOpacity, decoder.Extensions, null, () => { });
         _sut.Show();
         Pump(() => _navigator.Count == 3);
     }
@@ -242,6 +244,43 @@ public class ViewerWindowTests
     }
 
     [AvaloniaTest]
+    public void TransparencyKeys_PreviewTheLevel_ThenGoBackToOpaque()
+    {
+        Open();
+        _sut.Activate();
+        Dispatcher.UIThread.RunJobs();
+        ClassicAssert.IsTrue(_sut.IsActive, "the window should be active");
+        Press(PhysicalKey.Digit2);
+        ClassicAssert.AreEqual(.1, _windowOpacity.Value);
+        ClassicAssert.AreEqual("Transparency: 1/5", _sut.Overlay.Text);
+
+        Press(PhysicalKey.Digit6);
+        ClassicAssert.AreEqual(.75, _windowOpacity.Value);
+        ClassicAssert.AreEqual("Transparency: 5/5", _sut.Overlay.Text);
+
+        // Timers only fire in the real dispatcher loop, not in RunJobs
+        using var wait = new CancellationTokenSource(1200);
+        Dispatcher.UIThread.MainLoop(wait.Token);
+        ClassicAssert.AreEqual(1, _windowOpacity.Value);
+    }
+
+    [AvaloniaTest]
+    public void Transparency_LeavesTheWindowsOwnOpacityAlone()
+    {
+        Open();
+        Press(PhysicalKey.Digit2);
+        ClassicAssert.AreEqual(1, _sut.Opacity, "this doesn't reach the image, so the compositor should do the fading");
+    }
+
+    [AvaloniaTest]
+    public void Transparency_FallsBackWhenTheCompositorCannotFade()
+    {
+        Open(compositorFades: false);
+        Press(PhysicalKey.Digit2);
+        ClassicAssert.AreEqual(.1, _sut.Opacity);
+    }
+
+    [AvaloniaTest]
     public void QuitCloses()
     {
         Open();
@@ -340,6 +379,21 @@ public class ViewerWindowTests
         frame.Save(path);
         using var bitmap = SKBitmap.Decode(path);
         return bitmap.GetPixel((int)x, (int)y);
+    }
+
+    private sealed class FakeWindowOpacity : IWindowOpacity
+    {
+        public bool Works { get; init; }
+        public double Value { get; private set; } = 1;
+
+        public bool TrySet(IPlatformHandle window, double opacity)
+        {
+            if (Works)
+            {
+                Value = opacity;
+            }
+            return Works;
+        }
     }
 
     private sealed class FakeTrash : ITrash

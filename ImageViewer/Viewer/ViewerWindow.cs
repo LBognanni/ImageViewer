@@ -27,6 +27,7 @@ public sealed class ViewerWindow : Window
     private readonly ITempData _tempData;
     private readonly ITrash _trash;
     private readonly IClickThrough _clickThrough;
+    private readonly IWindowOpacity _windowOpacity;
     private readonly IReadOnlySet<string> _extensions;
     private readonly string? _settingsError;
     private readonly Action _onFirstImageShown;
@@ -37,6 +38,7 @@ public sealed class ViewerWindow : Window
     private readonly (string, string)[] _actionDescriptions;
 
     private DispatcherTimer? _autoPlayTimer;
+    private DispatcherTimer? _transparencyPreview;
     private double _transparency = 0.3;
     private bool _isClickThrough;
     private bool _isDeleting;
@@ -48,8 +50,8 @@ public sealed class ViewerWindow : Window
     internal MessageOverlay Overlay => _overlay;
 
     public ViewerWindow(Navigator navigator, ImagePipeline pipeline, ISettingsStorage settingsStorage, Settings settings,
-        ITempData tempData, ITrash trash, IClickThrough clickThrough, IReadOnlySet<string> extensions,
-        string? settingsError, Action onFirstImageShown)
+        ITempData tempData, ITrash trash, IClickThrough clickThrough, IWindowOpacity windowOpacity,
+        IReadOnlySet<string> extensions, string? settingsError, Action onFirstImageShown)
     {
         _navigator = navigator;
         _pipeline = pipeline;
@@ -58,6 +60,7 @@ public sealed class ViewerWindow : Window
         _tempData = tempData;
         _trash = trash;
         _clickThrough = clickThrough;
+        _windowOpacity = windowOpacity;
         _extensions = extensions;
         _settingsError = settingsError;
         _onFirstImageShown = onFirstImageShown;
@@ -352,11 +355,46 @@ public sealed class ViewerWindow : Window
         }
     }
 
-    private void Transparency5() => _transparency = .75;
-    private void Transparency4() => _transparency = .5;
-    private void Transparency3() => _transparency = .3;
-    private void Transparency2() => _transparency = .2;
-    private void Transparency1() => _transparency = .1;
+    private void Transparency5() => SetTransparency(.75, 5);
+    private void Transparency4() => SetTransparency(.5, 4);
+    private void Transparency3() => SetTransparency(.3, 3);
+    private void Transparency2() => SetTransparency(.2, 2);
+    private void Transparency1() => SetTransparency(.1, 1);
+
+    /// <summary>
+    /// The level applies when the window loses focus, so preview it briefly to show what it'll look like
+    /// </summary>
+    private void SetTransparency(double opacity, int level)
+    {
+        _transparency = opacity;
+        ApplyOpacity(opacity);
+        _overlay.ShowMessage($"Transparency: {level}/5", 500);
+
+        if (_transparencyPreview == null)
+        {
+            _transparencyPreview = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(800) };
+            _transparencyPreview.Tick += (_, _) =>
+            {
+                _transparencyPreview.Stop();
+                if (IsActive)
+                {
+                    ApplyOpacity(1);
+                }
+            };
+        }
+        _transparencyPreview.Stop();
+        _transparencyPreview.Start();
+    }
+
+    private void ApplyOpacity(double opacity)
+    {
+        var handle = TryGetPlatformHandle();
+        if (handle == null || !_windowOpacity.TrySet(handle, opacity))
+        {
+            // Only reaches what Avalonia draws itself, but it's better than nothing
+            Opacity = opacity;
+        }
+    }
 
     private void AutoPlaySlower() => ChangeAutoPlayInterval(1.112);
 
@@ -575,7 +613,7 @@ public sealed class ViewerWindow : Window
 
     private void OnActivated(object? sender, EventArgs e)
     {
-        Opacity = 1;
+        ApplyOpacity(1);
         _surface.Focus();
         if (_isClickThrough)
         {
@@ -587,7 +625,7 @@ public sealed class ViewerWindow : Window
     {
         if (_settings.TransparentWhenOutOfFocus || _isClickThrough)
         {
-            Opacity = _transparency;
+            ApplyOpacity(_transparency);
             if (_isClickThrough)
             {
                 SetClickThrough(true);

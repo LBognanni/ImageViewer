@@ -25,6 +25,7 @@ public sealed record AppServices(
     ITempData TempData,
     ITrash Trash,
     IClickThrough ClickThrough,
+    IWindowOpacity WindowOpacity,
     IReadOnlySet<string> Extensions,
     string? SettingsError);
 
@@ -59,7 +60,7 @@ public sealed class App : Application, IUpdateNotifier
         {
             var s = _services;
             _window = new ViewerWindow(s.Navigator, s.Pipeline, s.SettingsStorage, s.Settings, s.TempData, s.Trash,
-                s.ClickThrough, s.Extensions, s.SettingsError, () => CheckVersionLater());
+                s.ClickThrough, s.WindowOpacity, s.Extensions, s.SettingsError, () => CheckVersionLater());
             desktop.MainWindow = _window;
         }
 

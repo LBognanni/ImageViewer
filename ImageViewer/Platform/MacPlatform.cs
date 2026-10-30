@@ -6,7 +6,7 @@ using Avalonia.Platform;
 
 namespace ImageViewer;
 
-public sealed class MacPlatform : ITrash, IClickThrough
+public sealed class MacPlatform : ITrash, IClickThrough, IWindowOpacity
 {
     private const string ObjC = "/usr/lib/libobjc.A.dylib";
 
@@ -30,18 +30,30 @@ public sealed class MacPlatform : ITrash, IClickThrough
 
     public bool TrySet(IPlatformHandle window, bool enabled)
     {
-        var nsWindow = window.HandleDescriptor switch
-        {
-            "NSWindow" => window.Handle,
-            "NSView" => Send(window.Handle, Selector("window")),
-            _ => IntPtr.Zero
-        };
+        var nsWindow = GetWindow(window);
         if (nsWindow == IntPtr.Zero)
             return false;
 
         SendBool(nsWindow, Selector("setIgnoresMouseEvents:"), enabled);
         return true;
     }
+
+    public bool TrySet(IPlatformHandle window, double opacity)
+    {
+        var nsWindow = GetWindow(window);
+        if (nsWindow == IntPtr.Zero)
+            return false;
+
+        SendDouble(nsWindow, Selector("setAlphaValue:"), opacity);
+        return true;
+    }
+
+    private static IntPtr GetWindow(IPlatformHandle window) => window.HandleDescriptor switch
+    {
+        "NSWindow" => window.Handle,
+        "NSView" => Send(window.Handle, Selector("window")),
+        _ => IntPtr.Zero
+    };
 
     private static IntPtr NSString(string s)
     {
@@ -74,6 +86,9 @@ public sealed class MacPlatform : ITrash, IClickThrough
 
     [DllImport(ObjC, EntryPoint = "objc_msgSend")]
     private static extern void SendBool(IntPtr target, IntPtr selector, [MarshalAs(UnmanagedType.I1)] bool argument);
+
+    [DllImport(ObjC, EntryPoint = "objc_msgSend")]
+    private static extern void SendDouble(IntPtr target, IntPtr selector, double argument);
 
     [DllImport(ObjC, EntryPoint = "objc_msgSend")]
     [return: MarshalAs(UnmanagedType.I1)]
