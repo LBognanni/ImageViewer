@@ -1,51 +1,39 @@
-name: Build
+name: Build and release
 
+# Every run tests and packages all platforms. Pushing a version tag also drafts a release.
 on:
+  pull_request:
   push:
     branches: [master]
+    tags: ['[0-9]+.[0-9]+.[0-9]+', '[0-9]+.[0-9]+.[0-9]+-*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  tag:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    outputs:
-      new_tag: ${{ steps.tag.outputs.new_tag }}
-
-    steps:
-    - name: "Checkout Code"
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: '0'
-
-    - name: Bump version and push tag
-      id: tag
-      uses: anothrNick/github-tag-action@1.38.0
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        WITH_V: false
-        #DRY_RUN: true
-
   # Native AOT can't cross-compile between operating systems, so each one builds on its own runner
   build:
-    needs: tag
+    name: ${{ matrix.runtime }}
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         include:
-          - { os: windows-latest, runtime: win-x64 }
-          - { os: ubuntu-latest, runtime: linux-x64 }
-          - { os: macos-latest, runtime: osx-arm64 }
-          - { os: macos-latest, runtime: osx-x64 }
+          - { os: windows-2022, runtime: win-x64 }
+          # The oldest supported Ubuntu, because the binary needs this glibc or newer
+          - { os: ubuntu-22.04, runtime: linux-x64 }
+          - { os: macos-15, runtime: osx-arm64 }
+          - { os: macos-15-intel, runtime: osx-x64 }
     runs-on: ${{ matrix.os }}
     env:
-      VERSION: ${{ needs.tag.outputs.new_tag }}
+      VERSION: ${{ github.ref_type == 'tag' && github.ref_name || '0.0.0' }}
 
     steps:
-    - name: "Checkout Code"
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v6
+      with:
+        persist-credentials: false
 
-    - uses: actions/setup-dotnet@v4
+    - uses: actions/setup-dotnet@v5
       with:
         dotnet-version: '10.0.x'
 
@@ -59,7 +47,7 @@ jobs:
       run: dotnet test ImageViewer.Tests
 
     - name: Publish
-      run: dotnet run --project build/_build.csproj -- --target Publish --runtime ${{ matrix.runtime }}
+      run: dotnet publish ImageViewer -c Release -r ${{ matrix.runtime }} -p:Version=${{ env.VERSION }} -o output
 
     - name: Build Windows installer
       if: runner.os == 'Windows'
@@ -77,27 +65,27 @@ jobs:
       if: runner.os == 'macOS'
       run: bash Setup/package-macos.sh "${{ matrix.runtime }}" "$VERSION"
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: ${{ matrix.runtime }}
         path: dist/*
         if-no-files-found: error
 
   release:
-    needs: [tag, build]
-    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-22.04
     permissions:
       contents: write
 
     steps:
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v7
       with:
         path: dist
         merge-multiple: true
 
-    - uses: ncipollo/release-action@v1
-      with:
-        allowUpdates: true
-        tag: "${{ needs.tag.outputs.new_tag }}"
-        artifacts: "dist/*"
-        token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Draft the release
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
+      run: gh release create "$GITHUB_REF_NAME" dist/* --draft --generate-notes ${{ contains(github.ref_name, '-') && '--prerelease' || '' }}

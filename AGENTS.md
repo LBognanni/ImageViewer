@@ -8,16 +8,13 @@ Fast, private image viewer for Windows, Linux and macOS: an Avalonia app on .NET
 
 ## Commands
 
-The build is a NUKE project in `build/`.
-
 ```sh
-./build.sh                      # Linux/macOS: publish for this machine (default target)
-./build.ps1                     # Windows
-./build.sh --target Clean       # empties output/
-./build.sh --runtime osx-arm64  # another architecture of the same OS
+dotnet run --project ImageViewer                          # run from source
+dotnet publish ImageViewer -c Release -o output           # Native AOT build for this machine
+dotnet publish ImageViewer -c Release -r osx-arm64 -o output  # another architecture of the same OS
 ```
 
-Output goes to `output/`, always as Release. Native AOT can't cross-compile between operating systems. Set the `VERSION` env var to stamp the assembly version. Linux publishing needs clang or gcc, and zlib headers.
+Native AOT can't cross-compile between operating systems. Add `-p:Version=1.2.3` to stamp the version. Linux publishing needs clang or gcc, and zlib headers.
 
 Tests are NUnit with Moq and run on any OS, without a display:
 
@@ -36,7 +33,18 @@ output/ImageViewer --bench <folder with at least 8 images>
 
 ## Release process
 
-Every push to `master` triggers `.github/workflows/build.yml`, which tags a new version, then tests and builds on Windows, Linux and macOS, and publishes a GitHub release with the NSIS installer, a Linux tarball and macOS zips. The version bump comes from the commit message: `#patch`, `#minor`, `#major`, or `#none` to skip it.
+`.github/workflows/build.yml` tests and packages on Windows, Linux and macOS for every pull request and push to `master`, and can be started by hand on any branch. To release, push a version tag:
+
+```sh
+git tag 2.0.0
+git push origin 2.0.0
+```
+
+The tag sets the version, and a draft GitHub release is created with the NSIS installer, a Linux tarball and macOS zips. It stays invisible to users until it's published on GitHub.
+
+A tag with a suffix, like `2.0.0-rc1`, drafts a prerelease. GitHub's latest release skips those, so update notices ignore them.
+
+Tags have no `v` prefix. `GitHubVersionGetter` parses the tag of the latest release, including in versions already installed, so a prefix would silently stop update notices.
 
 ## Architecture
 

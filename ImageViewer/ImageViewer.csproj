@@ -14,6 +14,8 @@
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
     <DebugType>none</DebugType>
     <StripSymbols>true</StripSymbols>
+    <!-- Native AOT links with clang by default -->
+    <CppCompilerAndLinker Condition="!Exists('/usr/bin/clang') And Exists('/usr/bin/gcc')">gcc</CppCompilerAndLinker>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Include="Images\broken.png" LogicalName="broken.png" />
