@@ -8,7 +8,7 @@ name="ImageViewer-$version-$runtime"
 
 mkdir -p "dist/$name"
 cp -r output/. "dist/$name/"
-cp Setup/imageviewer.desktop Setup/eula.txt icon.svg "dist/$name/"
+cp Setup/imageviewer.desktop Setup/imageviewer.png Setup/eula.txt "dist/$name/"
 tar -czf "dist/$name.tar.gz" -C dist "$name"
 rm -r "dist/${name:?}"
 
@@ -21,8 +21,7 @@ chmod +x "$tool"
 appdir="dist/ImageViewer.AppDir"
 mkdir -p "$appdir/usr/bin"
 cp -r output/. "$appdir/usr/bin/"
-cp Setup/AppRun Setup/imageviewer.desktop "$appdir/"
-cp icon.svg "$appdir/imageviewer.svg"
+cp Setup/AppRun Setup/imageviewer.desktop Setup/imageviewer.png "$appdir/"
 
 # Runners have no FUSE, and this runs the tool without it
 ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 "$tool" --no-appstream "$appdir" "dist/$name.AppImage"

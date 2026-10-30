@@ -37,6 +37,8 @@ public sealed class App : Application, IUpdateNotifier
     public App(AppServices services)
     {
         _services = services;
+        // Otherwise system dialogs and menus call this "Avalonia Application"
+        Name = "Image Viewer";
     }
 
     /// <summary>

@@ -10,6 +10,7 @@ dmg="dist/ImageViewer-$version-$runtime.dmg"
 
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp -r output/. "$app/Contents/MacOS/"
+cp Setup/imageviewer.icns "$app/Contents/Resources/"
 sed "s/__VERSION__/$version/g" Setup/Info.plist > "$app/Contents/Info.plist"
 
 # Apple Silicon refuses to run anything without at least an ad-hoc signature
