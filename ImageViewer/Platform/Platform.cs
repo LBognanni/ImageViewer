@@ -22,26 +22,8 @@ public interface IClickThrough
     bool TrySet(IPlatformHandle window, bool enabled);
 }
 
-public interface IWindowOpacity
-{
-    /// <summary>
-    /// Have the system compositor fade a whole window, without redrawing it. <c>Window.Opacity</c>
-    /// won't do: it doesn't apply to the custom image drawing. Returns false if this system can't.
-    /// </summary>
-    bool TrySet(IPlatformHandle window, double opacity);
-}
-
 public static class Platform
 {
-    public static IWindowOpacity CreateWindowOpacity()
-    {
-        if (OperatingSystem.IsWindows())
-            return new WindowsPlatform();
-        if (OperatingSystem.IsMacOS())
-            return new MacPlatform();
-        return new X11WindowOpacity();
-    }
-
     public static ITrash CreateTrash()
     {
         if (OperatingSystem.IsWindows())

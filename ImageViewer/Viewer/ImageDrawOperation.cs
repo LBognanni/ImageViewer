@@ -64,11 +64,13 @@ public sealed class ImageDrawOperation : ICustomDrawOperation
     private readonly SKMatrix _matrix;
     private readonly SKColor _background;
     private readonly double _scaling;
+    private readonly double _opacity;
     private readonly TextureCache _textures;
 
     public ImageDrawOperation(Rect bounds, ImageHandle? image, ImageHandle? preload, SKMatrix matrix, SKColor background,
-        double scaling, TextureCache textures)
+        double scaling, double opacity, TextureCache textures)
     {
+        _opacity = opacity;
         Bounds = bounds;
         _image = image;
         _preload = preload;
@@ -99,6 +101,16 @@ public sealed class ImageDrawOperation : ICustomDrawOperation
         using var lease = feature.Lease();
         var canvas = lease.SkCanvas;
 
+        // Window.Opacity doesn't reach custom drawing. A layer fades the background
+        // and the image as one, so one doesn't show through the other.
+        using var layerPaint = _opacity < 1 ? new SKPaint { Color = SKColors.White.WithAlpha((byte)(_opacity * 255)) } : null;
+        if (layerPaint != null)
+        {
+            // Nothing else clears the window, and a fade over the last frame would look like no fade
+            canvas.Clear(SKColors.Transparent);
+            canvas.SaveLayer(layerPaint);
+        }
+
         using (var paint = new SKPaint { Color = _background })
         {
             canvas.DrawRect(0, 0, (float)Bounds.Width, (float)Bounds.Height, paint);
@@ -111,6 +123,11 @@ public sealed class ImageDrawOperation : ICustomDrawOperation
             canvas.Scale((float)(1 / _scaling));
             canvas.Concat(_matrix);
             canvas.DrawImage(image, 0, 0, Sampling);
+            canvas.Restore();
+        }
+
+        if (layerPaint != null)
+        {
             canvas.Restore();
         }
 

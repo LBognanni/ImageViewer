@@ -27,7 +27,6 @@ public sealed class ViewerWindow : Window
     private readonly ITempData _tempData;
     private readonly ITrash _trash;
     private readonly IClickThrough _clickThrough;
-    private readonly IWindowOpacity _windowOpacity;
     private readonly IReadOnlySet<string> _extensions;
     private readonly string? _settingsError;
     private readonly Action _onFirstImageShown;
@@ -38,8 +37,6 @@ public sealed class ViewerWindow : Window
     private readonly (string, string)[] _actionDescriptions;
 
     private DispatcherTimer? _autoPlayTimer;
-    private DispatcherTimer? _transparencyPreview;
-    private double _transparency = 0.3;
     private bool _isClickThrough;
     private bool _isDeleting;
     private string? _updateMessage;
@@ -50,8 +47,8 @@ public sealed class ViewerWindow : Window
     internal MessageOverlay Overlay => _overlay;
 
     public ViewerWindow(Navigator navigator, ImagePipeline pipeline, ISettingsStorage settingsStorage, Settings settings,
-        ITempData tempData, ITrash trash, IClickThrough clickThrough, IWindowOpacity windowOpacity,
-        IReadOnlySet<string> extensions, string? settingsError, Action onFirstImageShown)
+        ITempData tempData, ITrash trash, IClickThrough clickThrough, IReadOnlySet<string> extensions,
+        string? settingsError, Action onFirstImageShown)
     {
         _navigator = navigator;
         _pipeline = pipeline;
@@ -60,7 +57,6 @@ public sealed class ViewerWindow : Window
         _tempData = tempData;
         _trash = trash;
         _clickThrough = clickThrough;
-        _windowOpacity = windowOpacity;
         _extensions = extensions;
         _settingsError = settingsError;
         _onFirstImageShown = onFirstImageShown;
@@ -124,7 +120,9 @@ public sealed class ViewerWindow : Window
         Title = "Image Viewer";
         Width = 1304;
         Height = 837;
-        Background = Brushes.Black;
+        // ImageSurface paints the whole window, so anything here would show through when it fades
+        Background = null;
+        TransparencyLevelHint = new[] { WindowTransparencyLevel.Transparent };
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
 
         _surface = new ImageSurface(pipeline) { DefaultZoom = settings.DefaultZoom };
@@ -362,38 +360,29 @@ public sealed class ViewerWindow : Window
     private void Transparency1() => SetTransparency(.1, 1);
 
     /// <summary>
-    /// The level applies when the window loses focus, so preview it briefly to show what it'll look like
+    /// Fade the window straight away. Pressing the same level again makes it solid.
     /// </summary>
     private void SetTransparency(double opacity, int level)
     {
-        _transparency = opacity;
-        ApplyOpacity(opacity);
-        _overlay.ShowMessage($"Transparency: {level}/5", 500);
-
-        if (_transparencyPreview == null)
+        if (_surface.ImageOpacity == opacity)
         {
-            _transparencyPreview = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(800) };
-            _transparencyPreview.Tick += (_, _) =>
-            {
-                _transparencyPreview.Stop();
-                if (IsActive)
-                {
-                    ApplyOpacity(1);
-                }
-            };
+            ApplyOpacity(1);
+            _overlay.ShowMessage("Transparency off", 500);
         }
-        _transparencyPreview.Stop();
-        _transparencyPreview.Start();
+        else
+        {
+            ApplyOpacity(opacity);
+            _overlay.ShowMessage($"Transparency: {level}/5", 500);
+        }
     }
 
+    /// <summary>
+    /// Window.Opacity fades what Avalonia draws, and the surface fades the image it draws itself
+    /// </summary>
     private void ApplyOpacity(double opacity)
     {
-        var handle = TryGetPlatformHandle();
-        if (handle == null || !_windowOpacity.TrySet(handle, opacity))
-        {
-            // Only reaches what Avalonia draws itself, but it's better than nothing
-            Opacity = opacity;
-        }
+        Opacity = opacity;
+        _surface.ImageOpacity = opacity;
     }
 
     private void AutoPlaySlower() => ChangeAutoPlayInterval(1.112);
@@ -613,7 +602,6 @@ public sealed class ViewerWindow : Window
 
     private void OnActivated(object? sender, EventArgs e)
     {
-        ApplyOpacity(1);
         _surface.Focus();
         if (_isClickThrough)
         {
@@ -623,13 +611,9 @@ public sealed class ViewerWindow : Window
 
     private void OnDeactivated(object? sender, EventArgs e)
     {
-        if (_settings.TransparentWhenOutOfFocus || _isClickThrough)
+        if (_isClickThrough)
         {
-            ApplyOpacity(_transparency);
-            if (_isClickThrough)
-            {
-                SetClickThrough(true);
-            }
+            SetClickThrough(true);
         }
     }
 

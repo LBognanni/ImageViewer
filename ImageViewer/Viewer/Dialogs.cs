@@ -64,11 +64,6 @@ public sealed class SettingsDialog : Window
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
 
         var fullScreen = new CheckBox { Content = "Start in full screen", IsChecked = settings.StartInFullScreen };
-        var transparent = new CheckBox
-        {
-            Content = "Make window transparent when out of focus",
-            IsChecked = settings.TransparentWhenOutOfFocus
-        };
         var zoom = new ComboBox
         {
             ItemsSource = new[] { "Fit to screen", "Actual size" },
@@ -81,7 +76,6 @@ public sealed class SettingsDialog : Window
         {
             settings.StartInFullScreen = fullScreen.IsChecked == true;
             settings.DefaultZoom = zoom.SelectedIndex;
-            settings.TransparentWhenOutOfFocus = transparent.IsChecked == true;
             await settingsStorage.SaveSettings(settings);
             Close(true);
         };
@@ -96,7 +90,6 @@ public sealed class SettingsDialog : Window
             Children =
             {
                 fullScreen,
-                transparent,
                 new StackPanel
                 {
                     Orientation = Orientation.Horizontal,

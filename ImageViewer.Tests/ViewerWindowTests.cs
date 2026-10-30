@@ -42,10 +42,9 @@ public class ViewerWindowTests
     private Settings _settings = null!;
     private FakeTrash _trash = null!;
     private Mock<IClickThrough> _clickThrough = null!;
-    private FakeWindowOpacity _windowOpacity = null!;
     private ViewerWindow _sut = null!;
 
-    private void Open(string first = "a.jpg", Settings? settings = null, bool compositorFades = true)
+    private void Open(string first = "a.jpg", Settings? settings = null)
     {
         _folder = Directory.CreateTempSubdirectory("imageviewer-ui").FullName;
         byte index = 0;
@@ -62,14 +61,13 @@ public class ViewerWindowTests
         _trash = new FakeTrash();
         _clickThrough = new Mock<IClickThrough>();
         _clickThrough.Setup(c => c.TrySet(It.IsAny<IPlatformHandle>(), It.IsAny<bool>())).Returns(true);
-        _windowOpacity = new FakeWindowOpacity { Works = compositorFades };
 
         var tempData = new Mock<ITempData>();
         tempData.Setup(t => t.ReadTime(It.IsAny<string>())).Returns(DateTime.Now);
 
         _navigator.Open(Path.Combine(_folder, first));
         _sut = new ViewerWindow(_navigator, _pipeline, new Mock<ISettingsStorage>().Object, _settings, tempData.Object,
-            _trash, _clickThrough.Object, _windowOpacity, decoder.Extensions, null, () => { });
+            _trash, _clickThrough.Object, decoder.Extensions, null, () => { });
         _sut.Show();
         Pump(() => _navigator.Count == 3);
     }
@@ -244,40 +242,45 @@ public class ViewerWindowTests
     }
 
     [AvaloniaTest]
-    public void TransparencyKeys_PreviewTheLevel_ThenGoBackToOpaque()
+    public void TransparencyKeys_ApplyImmediately_AndStay()
     {
         Open();
-        _sut.Activate();
-        Dispatcher.UIThread.RunJobs();
-        ClassicAssert.IsTrue(_sut.IsActive, "the window should be active");
         Press(PhysicalKey.Digit2);
-        ClassicAssert.AreEqual(.1, _windowOpacity.Value);
+        ClassicAssert.AreEqual(.1, _sut.Opacity);
+        ClassicAssert.AreEqual(.1, _sut.Surface.ImageOpacity);
         ClassicAssert.AreEqual("Transparency: 1/5", _sut.Overlay.Text);
 
         Press(PhysicalKey.Digit6);
-        ClassicAssert.AreEqual(.75, _windowOpacity.Value);
+        ClassicAssert.AreEqual(.75, _sut.Surface.ImageOpacity);
         ClassicAssert.AreEqual("Transparency: 5/5", _sut.Overlay.Text);
 
-        // Timers only fire in the real dispatcher loop, not in RunJobs
         using var wait = new CancellationTokenSource(1200);
         Dispatcher.UIThread.MainLoop(wait.Token);
-        ClassicAssert.AreEqual(1, _windowOpacity.Value);
+        ClassicAssert.AreEqual(.75, _sut.Surface.ImageOpacity, "the level should stay");
     }
 
     [AvaloniaTest]
-    public void Transparency_LeavesTheWindowsOwnOpacityAlone()
+    public void PressingTheSameTransparencyKeyAgain_MakesTheWindowSolid()
     {
         Open();
-        Press(PhysicalKey.Digit2);
-        ClassicAssert.AreEqual(1, _sut.Opacity, "this doesn't reach the image, so the compositor should do the fading");
+        Press(PhysicalKey.Digit3);
+        Press(PhysicalKey.Digit3);
+        ClassicAssert.AreEqual(1, _sut.Opacity);
+        ClassicAssert.AreEqual(1, _sut.Surface.ImageOpacity);
+        ClassicAssert.AreEqual("Transparency off", _sut.Overlay.Text);
     }
 
     [AvaloniaTest]
-    public void Transparency_FallsBackWhenTheCompositorCannotFade()
+    public void Transparency_FadesTheImageItself()
     {
-        Open(compositorFades: false);
-        Press(PhysicalKey.Digit2);
-        ClassicAssert.AreEqual(.1, _sut.Opacity);
+        Open();
+        Pump(() => HasSharpImage(_navigator.Current!));
+        var solid = PixelAt(_sut.Width / 2, _sut.Height / 2);
+
+        _sut.Surface.ImageOpacity = .3;
+        Dispatcher.UIThread.RunJobs();
+
+        ClassicAssert.Less(PixelAt(_sut.Width / 2, _sut.Height / 2).Red, solid.Red * .6);
     }
 
     [AvaloniaTest]
@@ -379,21 +382,6 @@ public class ViewerWindowTests
         frame.Save(path);
         using var bitmap = SKBitmap.Decode(path);
         return bitmap.GetPixel((int)x, (int)y);
-    }
-
-    private sealed class FakeWindowOpacity : IWindowOpacity
-    {
-        public bool Works { get; init; }
-        public double Value { get; private set; } = 1;
-
-        public bool TrySet(IPlatformHandle window, double opacity)
-        {
-            if (Works)
-            {
-                Value = opacity;
-            }
-            return Works;
-        }
     }
 
     private sealed class FakeTrash : ITrash

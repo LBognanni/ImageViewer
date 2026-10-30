@@ -7,10 +7,8 @@ using Avalonia.Platform;
 
 namespace ImageViewer;
 
-public sealed class WindowsPlatform : ITrash, IClickThrough, IWindowOpacity
+public sealed class WindowsPlatform : ITrash, IClickThrough
 {
-    private const uint LWA_ALPHA = 2;
-
     private const int GWL_EXSTYLE = -20;
     private const long WS_EX_TRANSPARENT = 0x20;
     private const long WS_EX_LAYERED = 0x80000;
@@ -48,13 +46,6 @@ public sealed class WindowsPlatform : ITrash, IClickThrough, IWindowOpacity
                || Marshal.GetLastPInvokeError() == 0;
     }
 
-    public bool TrySet(IPlatformHandle window, double opacity)
-    {
-        var style = GetWindowLongPtrW(window.Handle, GWL_EXSTYLE).ToInt64();
-        SetWindowLongPtrW(window.Handle, GWL_EXSTYLE, new IntPtr(style | WS_EX_LAYERED));
-        return SetLayeredWindowAttributes(window.Handle, 0, (byte)Math.Round(opacity * 255), LWA_ALPHA);
-    }
-
     [StructLayout(LayoutKind.Sequential)]
     private struct SHFILEOPSTRUCT
     {
@@ -70,10 +61,6 @@ public sealed class WindowsPlatform : ITrash, IClickThrough, IWindowOpacity
 
     [DllImport("shell32.dll")]
     private static extern int SHFileOperationW(ref SHFILEOPSTRUCT operation);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool SetLayeredWindowAttributes(IntPtr hWnd, uint colorKey, byte alpha, uint flags);
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern IntPtr GetWindowLongPtrW(IntPtr hWnd, int nIndex);

@@ -74,7 +74,6 @@ public class SettingsTests
 
         ClassicAssert.IsTrue(settings.StartInFullScreen);
         ClassicAssert.AreEqual(1m, settings.DefaultZoom);
-        ClassicAssert.IsFalse(settings.TransparentWhenOutOfFocus);
         ClassicAssert.AreEqual(2, settings.KeyBindings.Count, "saved bindings replace the defaults");
         ClassicAssert.IsTrue(settings.TryGetKeyBindingFor(new KeyCombination(Key.OemPlus, KeyModifiers.None), out var binding));
         ClassicAssert.AreEqual("NextImage", binding!.Action);
@@ -101,6 +100,6 @@ public class SettingsTests
     {
         var sut = new SettingsJsonStorage(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
         var settings = await sut.LoadSettings();
-        ClassicAssert.IsTrue(settings.TransparentWhenOutOfFocus);
+        ClassicAssert.AreEqual(0m, settings.DefaultZoom);
     }
 }

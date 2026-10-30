@@ -68,7 +68,11 @@ To add an action, update all of:
 
 Saved settings replace the default bindings entirely, so users with an existing settings file don't get new defaults. `GetHelpText` leaves actions with no binding out of the help overlay.
 
-**Platform services (`Platform/`).** `ITrash`, `IClickThrough` and `IWindowOpacity` have one implementation per OS, chosen by the `Platform` factory. Linux click-through and opacity go through X11, and Linux trash through `gio` or `kioclient`. `ITrash` must never fall back to deleting permanently. Don't fade the window with `Window.Opacity`: it doesn't apply to `ImageDrawOperation`, and the compositor can fade the window without a redraw.
+**Platform services (`Platform/`).** Keep OS-specific code to a minimum, and look for a shared approach first. `ITrash` and `IClickThrough` have one implementation per OS because nothing shared exists, chosen by the `Platform` factory. Linux click-through goes through X11, and Linux trash through `gio` or `kioclient`. `ITrash` must never fall back to deleting permanently.
+
+**Transparency.** `Window.Opacity` doesn't reach `ImageDrawOperation`, so `ViewerWindow.ApplyOpacity` sets it and `ImageSurface.ImageOpacity` together. The operation clears what was there, then fades the background and image as one layer. Keys 2 to 6 apply a level immediately, and pressing the same one again makes the window solid. This one path is tested on X11 and XWayland.
+
+**Wayland.** The app runs through XWayland, using Avalonia's stable X11 backend. Its native Wayland backend is still experimental. To test on Wayland from any session, run the app under `kwin_wayland --virtual --xwayland`, which is isolated from the desktop. Its empty desktop is transparent, so screenshots need a bright window underneath to show real see-through, and comparing their RGB alone is misleading.
 
 **Settings and state.** Settings are JSON, in `%userprofile%\codemade.imageviewer_settings.json` on Windows, `$XDG_CONFIG_HOME/imageviewer/settings.json` on Linux, and `~/Library/Application Support/ImageViewer/settings.json` on macOS. `ITempData` (`FileBasedTempData`) stores small transient values, such as the last delete confirmation time, in per-user app data.
 

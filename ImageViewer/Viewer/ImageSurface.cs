@@ -25,6 +25,7 @@ public sealed class ImageSurface : Avalonia.Controls.Control
     private Point _pan;
     private decimal _zoom;
     private int _rotation;
+    private double _imageOpacity = 1;
     private bool _dragging;
     private Point _lastPoint;
 
@@ -37,6 +38,19 @@ public sealed class ImageSurface : Avalonia.Controls.Control
     }
 
     public decimal DefaultZoom { get; set; }
+
+    /// <summary>
+    /// How see-through the image is. Separate from <c>Opacity</c>, which doesn't apply to custom drawing.
+    /// </summary>
+    public double ImageOpacity
+    {
+        get => _imageOpacity;
+        set
+        {
+            _imageOpacity = value;
+            InvalidateVisual();
+        }
+    }
 
     public decimal Zoom
     {
@@ -192,7 +206,7 @@ public sealed class ImageSurface : Avalonia.Controls.Control
         }
 
         context.Custom(new ImageDrawOperation(new Rect(Bounds.Size), image, _preload, matrix,
-            image?.Background ?? SKColors.Black, scaling, _textures));
+            image?.Background ?? SKColors.Black, scaling, _imageOpacity, _textures));
         _preload = null;
     }
 

@@ -6,7 +6,7 @@ using Avalonia.Platform;
 
 namespace ImageViewer;
 
-public sealed class MacPlatform : ITrash, IClickThrough, IWindowOpacity
+public sealed class MacPlatform : ITrash, IClickThrough
 {
     private const string ObjC = "/usr/lib/libobjc.A.dylib";
 
@@ -35,16 +35,6 @@ public sealed class MacPlatform : ITrash, IClickThrough, IWindowOpacity
             return false;
 
         SendBool(nsWindow, Selector("setIgnoresMouseEvents:"), enabled);
-        return true;
-    }
-
-    public bool TrySet(IPlatformHandle window, double opacity)
-    {
-        var nsWindow = GetWindow(window);
-        if (nsWindow == IntPtr.Zero)
-            return false;
-
-        SendDouble(nsWindow, Selector("setAlphaValue:"), opacity);
         return true;
     }
 
@@ -86,9 +76,6 @@ public sealed class MacPlatform : ITrash, IClickThrough, IWindowOpacity
 
     [DllImport(ObjC, EntryPoint = "objc_msgSend")]
     private static extern void SendBool(IntPtr target, IntPtr selector, [MarshalAs(UnmanagedType.I1)] bool argument);
-
-    [DllImport(ObjC, EntryPoint = "objc_msgSend")]
-    private static extern void SendDouble(IntPtr target, IntPtr selector, double argument);
 
     [DllImport(ObjC, EntryPoint = "objc_msgSend")]
     [return: MarshalAs(UnmanagedType.I1)]
