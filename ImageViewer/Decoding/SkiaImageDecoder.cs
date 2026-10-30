@@ -45,12 +45,6 @@ public sealed class SkiaImageDecoder : IImageDecoder
             return null;
         }
 
-        // A scaled decode is already close enough. Downsampling on the CPU costs more than the decode did.
-        if (target != null && !source.HasCheapScaling)
-        {
-            bitmap = DownsampleToFit(bitmap, target.Value);
-        }
-
         bitmap.SetImmutable();
         // The image takes over the bitmap's pixels, which stay valid after this bitmap is disposed
         using (bitmap)
@@ -78,26 +72,6 @@ public sealed class SkiaImageDecoder : IImageDecoder
             }
         }
         return codec.Info.Size;
-    }
-
-    private static SKBitmap DownsampleToFit(SKBitmap bitmap, SKSizeI target)
-    {
-        var scale = FitScale(bitmap.Width, bitmap.Height, target);
-        if (scale >= 1)
-            return bitmap;
-
-        var size = new SKImageInfo(
-            Math.Max(1, (int)Math.Ceiling(bitmap.Width * scale)),
-            Math.Max(1, (int)Math.Ceiling(bitmap.Height * scale)),
-            bitmap.ColorType, bitmap.AlphaType);
-        var resized = new SKBitmap(size);
-        if (!bitmap.ScalePixels(resized, new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.Linear)))
-        {
-            resized.Dispose();
-            return bitmap;
-        }
-        bitmap.Dispose();
-        return resized;
     }
 
     /// <summary>

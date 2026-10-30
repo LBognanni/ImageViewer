@@ -24,7 +24,8 @@ public interface IImageDecoder
     ImageInfo? Probe(string path);
 
     /// <summary>
-    /// Decode as cheaply as possible while still fitting at least <paramref name="target"/>.
+    /// Decode as cheaply as possible while still fitting at least <paramref name="target"/>. Formats
+    /// without cheap scaling decode at full size, because the GPU can shrink them faster than the CPU.
     /// A null target decodes at full resolution.
     /// </summary>
     DecodedImage? Decode(string path, SKSizeI? target);

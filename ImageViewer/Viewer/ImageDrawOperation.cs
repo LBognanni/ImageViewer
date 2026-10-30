@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Avalonia;
 using Avalonia.Media;
@@ -16,34 +17,39 @@ namespace ImageViewer;
 public sealed class TextureCache
 {
     private const int Capacity = 4;
-    private readonly List<(ImageHandle Handle, SKImage Texture)> _textures = new();
+    private readonly List<(ImageHandle Handle, SKImage Texture, bool Mipmapped)> _textures = new();
 
-    public SKImage? Get(ImageHandle handle, GRContext context)
+    public SKImage? Get(ImageHandle handle, GRContext context, bool mipmapped)
     {
         var index = _textures.FindIndex(t => t.Handle == handle);
         if (index >= 0)
         {
             var entry = _textures[index];
             _textures.RemoveAt(index);
-            _textures.Add(entry);
-            return entry.Texture;
+            if (entry.Mipmapped || !mipmapped)
+            {
+                _textures.Add(entry);
+                return entry.Texture;
+            }
+            entry.Texture.Dispose();
+            handle.Release();
         }
 
         if (!handle.TryAcquire())
             return null;
 
         // Null when the image is larger than the GPU's texture size limit
-        var texture = handle.Image.ToTextureImage(context, true);
+        var texture = handle.Image.ToTextureImage(context, mipmapped);
         if (texture == null)
         {
             handle.Release();
             return null;
         }
 
-        _textures.Add((handle, texture));
+        _textures.Add((handle, texture, mipmapped));
         if (_textures.Count > Capacity)
         {
-            var (oldHandle, oldTexture) = _textures[0];
+            var (oldHandle, oldTexture, _) = _textures[0];
             _textures.RemoveAt(0);
             oldTexture.Dispose();
             oldHandle.Release();
@@ -57,7 +63,28 @@ public sealed class TextureCache
 /// </summary>
 public sealed class ImageDrawOperation : ICustomDrawOperation
 {
-    private static readonly SKSamplingOptions Sampling = new(SKFilterMode.Linear, SKMipmapMode.Linear);
+    /// <summary>
+    /// The shader's nine samples cover a shrink of up to this much. Past it, mipmaps take over.
+    /// </summary>
+    private const float MaxShaderShrink = 6;
+
+    private const string DownscaleShader = """
+        uniform shader image;
+        uniform float spacing;
+        half4 main(float2 p) {
+            half4 c = half4(0);
+            for (int y = -1; y <= 1; y++) {
+                for (int x = -1; x <= 1; x++) {
+                    c += image.eval(p + float2(x, y) * spacing);
+                }
+            }
+            return c / 9;
+        }
+        """;
+
+    private static readonly SKSamplingOptions Linear = new(SKFilterMode.Linear);
+    private static readonly SKSamplingOptions Mipmapped = new(SKFilterMode.Linear, SKMipmapMode.Linear);
+    private static SKRuntimeShaderBuilder? _shader;
 
     private readonly ImageHandle? _image;
     private readonly ImageHandle? _preload;
@@ -118,11 +145,25 @@ public sealed class ImageDrawOperation : ICustomDrawOperation
 
         if (_image != null)
         {
-            var image = (lease.GrContext is GRContext gr ? _textures.Get(_image, gr) : null) ?? _image.Image;
+            var shrink = 1 / MathF.Sqrt(_matrix.ScaleX * _matrix.ScaleX + _matrix.SkewY * _matrix.SkewY);
+            var useMipmaps = shrink > MaxShaderShrink;
+            var texture = lease.GrContext is GRContext gr ? _textures.Get(_image, gr, useMipmaps) : null;
+
             canvas.Save();
             canvas.Scale((float)(1 / _scaling));
             canvas.Concat(_matrix);
-            canvas.DrawImage(image, 0, 0, Sampling);
+            if (texture == null || useMipmaps)
+            {
+                canvas.DrawImage(texture ?? _image.Image, 0, 0, Mipmapped);
+            }
+            else if (shrink > 1)
+            {
+                DrawDownscaled(canvas, texture, shrink);
+            }
+            else
+            {
+                canvas.DrawImage(texture, 0, 0, Linear);
+            }
             canvas.Restore();
         }
 
@@ -133,7 +174,23 @@ public sealed class ImageDrawOperation : ICustomDrawOperation
 
         if (_preload != null && lease.GrContext is GRContext context2)
         {
-            _textures.Get(_preload, context2);
+            _textures.Get(_preload, context2, false);
         }
+    }
+
+    /// <summary>
+    /// Average several samples for each screen pixel. Building mipmaps takes about as long
+    /// as the upload itself, and this needs none, for no real cost per frame.
+    /// </summary>
+    internal static void DrawDownscaled(SKCanvas canvas, SKImage texture, float shrink)
+    {
+        _shader ??= SKRuntimeEffect.BuildShader(DownscaleShader);
+
+        using var image = texture.ToShader(SKShaderTileMode.Clamp, SKShaderTileMode.Clamp, Linear);
+        _shader.Children["image"] = image;
+        _shader.Uniforms["spacing"] = 0.33f * shrink;
+        using var shader = _shader.Build();
+        using var paint = new SKPaint { Shader = shader };
+        canvas.DrawRect(0, 0, texture.Width, texture.Height, paint);
     }
 }

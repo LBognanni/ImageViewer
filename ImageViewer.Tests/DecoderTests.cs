@@ -52,7 +52,7 @@ public class DecoderTests : LocalPathTests
     }
 
     [Test]
-    public void PngHasNoCheapScaling_ButIsStillReducedToTheTarget()
+    public void PngHasNoCheapScaling_SoItStaysAtFullSize()
     {
         var path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".png");
         using (var bitmap = new SKBitmap(800, 400))
@@ -63,7 +63,7 @@ public class DecoderTests : LocalPathTests
         }
 
         ClassicAssert.IsFalse(_sut.Probe(path)!.HasCheapScaling);
-        ClassicAssert.AreEqual(200, _sut.Decode(path, new SKSizeI(200, 200))!.Image.Width);
+        ClassicAssert.AreEqual(800, _sut.Decode(path, new SKSizeI(200, 200))!.Image.Width);
     }
 
     [TestCase((ushort)1, SKEncodedOrigin.TopLeft)]
