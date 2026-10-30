@@ -302,6 +302,25 @@ public class ViewerWindowTests
     }
 
     [AvaloniaTest]
+    public void AutoPlaySpeedKeys_WorkOnTheNumpadAndTheMainKeyboard()
+    {
+        Open();
+        Press(PhysicalKey.A);
+
+        Press(PhysicalKey.NumPadAdd);
+        ClassicAssert.AreEqual("Autoplay interval: 1800ms", _sut.Overlay.Text);
+        Press(PhysicalKey.Equal);
+        ClassicAssert.AreEqual("Autoplay interval: 1620ms", _sut.Overlay.Text);
+        Press(PhysicalKey.Equal, RawInputModifiers.Shift);
+        ClassicAssert.AreEqual("Autoplay interval: 1458ms", _sut.Overlay.Text);
+
+        Press(PhysicalKey.NumPadSubtract);
+        ClassicAssert.AreEqual("Autoplay interval: 1621ms", _sut.Overlay.Text);
+        Press(PhysicalKey.Minus);
+        ClassicAssert.AreEqual("Autoplay interval: 1802ms", _sut.Overlay.Text);
+    }
+
+    [AvaloniaTest]
     public void ClickThroughTurnsOff_WhenToggledOff()
     {
         Open();

@@ -22,6 +22,8 @@ public class Settings
         {
             { "A", new KeyBinding("AutoPlay") },
             { "Add", new KeyBinding("AutoPlayFaster") },
+            { "OemPlus", new KeyBinding("AutoPlayFaster") },
+            { "Shift|OemPlus", new KeyBinding("AutoPlayFaster") },
             { "B", new KeyBinding("ToggleBorderless") },
             { "C", new KeyBinding("CopyFileName") },
             { "D", new KeyBinding("DeleteCurrentFile") },
@@ -43,6 +45,7 @@ public class Settings
             { "Right", new KeyBinding("NextImage") },
             { "S", new KeyBinding("Shuffle") },
             { "Subtract", new KeyBinding("AutoPlaySlower") },
+            { "OemMinus", new KeyBinding("AutoPlaySlower") },
             { "T", new KeyBinding("ToggleTopMost") },
             { "W", new KeyBinding("ToggleClickThrough") }
         };
