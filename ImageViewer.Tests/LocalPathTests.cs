@@ -7,7 +7,7 @@ namespace ImageViewer.Tests
     {
         protected string LocalPath(string fileName)
         {
-            return Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), fileName);
+            return Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, fileName);
         }
     }
 }

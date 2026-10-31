@@ -4,6 +4,7 @@
     <OutputType>Library</OutputType>
     <IsPackable>false</IsPackable>
     <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <None Update="testimages\red.png">

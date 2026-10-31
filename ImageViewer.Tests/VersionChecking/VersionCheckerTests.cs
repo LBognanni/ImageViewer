@@ -8,11 +8,11 @@ namespace ImageViewer.Tests;
 
 public class VersionCheckerTests
 {
-    private VersionChecker _sut;
+    private VersionChecker _sut = null!;
     private readonly Version _currentVersion = new(1,2, 3);
-    private Mock<IVersionGetter> _versionGetter;
-    private Mock<ITempData> _tempData;
-    private Mock<IUpdateNotifier> _notifier;
+    private Mock<IVersionGetter> _versionGetter = null!;
+    private Mock<ITempData> _tempData = null!;
+    private Mock<IUpdateNotifier> _notifier = null!;
     private readonly Expression<Action<IUpdateNotifier>> _notifierExpression = x=>x.Notify(It.IsAny<string>(), It.IsAny<string>());
 
     [SetUp]
@@ -63,7 +63,7 @@ public class VersionCheckerTests
     [Test]
     public async Task WhenThereWasAnErrorRetrievingVersion_ItDoesNotNotify()
     {
-        _versionGetter.Setup(x => x.GetLatestVersion()).ReturnsAsync((Version)null);
+        _versionGetter.Setup(x => x.GetLatestVersion()).ReturnsAsync((Version?)null);
         await _sut.NotifyIfNewVersion();
         _notifier.Verify(_notifierExpression, Times.Never);
         _tempData.Verify(x=>x.ReadTime(VersionChecker.LASTNOTIFICATIONDATE), Times.Never);

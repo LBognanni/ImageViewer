@@ -10,6 +10,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Input;
+using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Threading;
 using ImageViewer.Tests;
@@ -415,7 +416,7 @@ public class ViewerWindowTests
     {
         using var frame = _sut.CaptureRenderedFrame()!;
         var path = Path.Combine(_folder, "frame.png");
-        frame.Save(path);
+        frame.Save(path, PngBitmapEncoderOptions.Default);
         using var bitmap = SKBitmap.Decode(path);
         return bitmap.GetPixel((int)x, (int)y);
     }
