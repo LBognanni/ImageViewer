@@ -23,7 +23,6 @@ jobs:
           # The oldest supported Ubuntu, because the binary needs this glibc or newer
           - { os: ubuntu-22.04, runtime: linux-x64 }
           - { os: macos-15, runtime: osx-arm64 }
-          - { os: macos-15-intel, runtime: osx-x64 }
     runs-on: ${{ matrix.os }}
     env:
       VERSION: ${{ github.ref_type == 'tag' && github.ref_name || '0.0.0' }}
