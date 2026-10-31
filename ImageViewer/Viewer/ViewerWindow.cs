@@ -27,6 +27,7 @@ public sealed class ViewerWindow : Window
     private readonly ITempData _tempData;
     private readonly ITrash _trash;
     private readonly IClickThrough _clickThrough;
+    private readonly IDefaultViewer _defaultViewer;
     private readonly IReadOnlySet<string> _extensions;
     private readonly string? _settingsError;
     private readonly Action _onFirstImageShown;
@@ -47,7 +48,7 @@ public sealed class ViewerWindow : Window
     internal MessageOverlay Overlay => _overlay;
 
     public ViewerWindow(Navigator navigator, ImagePipeline pipeline, ISettingsStorage settingsStorage, Settings settings,
-        ITempData tempData, ITrash trash, IClickThrough clickThrough, IReadOnlySet<string> extensions,
+        ITempData tempData, ITrash trash, IClickThrough clickThrough, IDefaultViewer defaultViewer, IReadOnlySet<string> extensions,
         string? settingsError, Action onFirstImageShown)
     {
         _navigator = navigator;
@@ -57,6 +58,7 @@ public sealed class ViewerWindow : Window
         _tempData = tempData;
         _trash = trash;
         _clickThrough = clickThrough;
+        _defaultViewer = defaultViewer;
         _extensions = extensions;
         _settingsError = settingsError;
         _onFirstImageShown = onFirstImageShown;
@@ -514,7 +516,7 @@ public sealed class ViewerWindow : Window
             ToggleFullScreen();
         }
 
-        var dialog = new SettingsDialog(_settingsStorage, _settings);
+        var dialog = new SettingsDialog(_settingsStorage, _settings, _defaultViewer);
         if (await dialog.ShowDialog<bool>(this))
         {
             _surface.DefaultZoom = _settings.DefaultZoom;

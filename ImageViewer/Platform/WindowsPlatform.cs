@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -7,13 +8,22 @@ using Avalonia.Platform;
 
 namespace ImageViewer;
 
-public sealed class WindowsPlatform : ITrash, IClickThrough
+public sealed class WindowsPlatform : ITrash, IClickThrough, IDefaultViewer
 {
     private const int GWL_EXSTYLE = -20;
     private const long WS_EX_TRANSPARENT = 0x20;
     private const long WS_EX_LAYERED = 0x80000;
     private const uint FO_DELETE = 3;
     private const ushort FOF_ALLOWUNDO = 0x40;
+
+    /// <summary>
+    /// Windows doesn't let apps choose this themselves. The installer offers the app, and the user picks it.
+    /// </summary>
+    public Task<string> MakeDefault()
+    {
+        Process.Start(new ProcessStartInfo("ms-settings:defaultapps") { UseShellExecute = true });
+        return Task.FromResult("Windows asks you to choose this yourself. In Settings, pick Image Viewer for your image file types.");
+    }
 
     public Task MoveToTrash(string fileName)
     {

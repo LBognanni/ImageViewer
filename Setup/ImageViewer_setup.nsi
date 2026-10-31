@@ -10,6 +10,11 @@
 !define PRODUCT_UNINST_ROOT_KEY "HKLM"
 !define PRODUCT_STARTMENU_REGVAL "NSIS:StartMenuDir"
 
+; Offers the app in Windows' Default Apps settings, without taking over any file type
+!macro RegisterExtension EXTENSION
+  WriteRegStr HKLM "Software\ImageViewer\Capabilities\FileAssociations" "${EXTENSION}" "ImageViewer.Image"
+!macroend
+
 SetCompressor lzma
 
 ; MUI 1.67 compatible ------
@@ -93,6 +98,23 @@ Section -Post
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "${PRODUCT_STARTMENU_REGVAL}" "$ICONS_GROUP"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "URLInfoAbout" "${PRODUCT_WEB_SITE}"
   WriteRegStr ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
+
+  WriteRegStr HKLM "Software\Classes\ImageViewer.Image" "" "Image"
+  WriteRegStr HKLM "Software\Classes\ImageViewer.Image\DefaultIcon" "" "$INSTDIR\ImageViewer.exe,0"
+  WriteRegStr HKLM "Software\Classes\ImageViewer.Image\shell\open\command" "" '"$INSTDIR\ImageViewer.exe" "%1"'
+  WriteRegStr HKLM "Software\ImageViewer\Capabilities" "ApplicationName" "Image Viewer"
+  WriteRegStr HKLM "Software\ImageViewer\Capabilities" "ApplicationDescription" "Fast and private image viewer"
+  !insertmacro RegisterExtension ".bmp"
+  !insertmacro RegisterExtension ".gif"
+  !insertmacro RegisterExtension ".ico"
+  !insertmacro RegisterExtension ".jfif"
+  !insertmacro RegisterExtension ".jif"
+  !insertmacro RegisterExtension ".jpeg"
+  !insertmacro RegisterExtension ".jpg"
+  !insertmacro RegisterExtension ".png"
+  !insertmacro RegisterExtension ".wbmp"
+  !insertmacro RegisterExtension ".webp"
+  WriteRegStr HKLM "Software\RegisteredApplications" "Image Viewer" "Software\ImageViewer\Capabilities"
 SectionEnd
 
 Function un.onUninstSuccess
@@ -106,6 +128,7 @@ Function un.onInit
 FunctionEnd
 
 Section Uninstall
+  SetRegView 64
   ReadRegStr $ICONS_GROUP ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "${PRODUCT_STARTMENU_REGVAL}"
   Delete "$INSTDIR\ImageViewer.exe"
   Delete "$INSTDIR\*.dll"
@@ -126,5 +149,8 @@ Section Uninstall
 
   DeleteRegKey ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}"
   DeleteRegKey HKLM "${PRODUCT_DIR_REGKEY}"
+  DeleteRegKey HKLM "Software\Classes\ImageViewer.Image"
+  DeleteRegKey HKLM "Software\ImageViewer"
+  DeleteRegValue HKLM "Software\RegisteredApplications" "Image Viewer"
   SetAutoClose true
 SectionEnd

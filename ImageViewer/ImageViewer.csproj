@@ -20,6 +20,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Images\broken.png" LogicalName="broken.png" />
     <EmbeddedResource Include="icon.ico" LogicalName="icon.ico" />
+    <EmbeddedResource Include="..\Setup\imageviewer.png" LogicalName="imageviewer.png" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="12.1.4" />

@@ -53,7 +53,7 @@ static class Program
         }
 
         var services = new AppServices(navigator, pipeline, settingsStorage, settings, new FileBasedTempData(),
-            Platform.CreateTrash(), Platform.CreateClickThrough(), decoder.Extensions, settingsError);
+            Platform.CreateTrash(), Platform.CreateClickThrough(), Platform.CreateDefaultViewer(), decoder.Extensions, settingsError);
 
         var result = AppBuilder.Configure(() => new App(services))
             .UsePlatformDetect()

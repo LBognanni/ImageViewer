@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading.Tasks;
 using Avalonia.Platform;
 
@@ -23,7 +24,7 @@ public sealed class LinuxTrash : ITrash
         throw new IOException("No trash tool worked. Install gio or kioclient to delete files from here.");
     }
 
-    private static async Task<bool> TryRun(string program, params string[] arguments)
+    internal static async Task<bool> TryRun(string program, params string[] arguments)
     {
         var start = new ProcessStartInfo(program) { RedirectStandardError = true, UseShellExecute = false };
         foreach (var argument in arguments)
@@ -45,6 +46,80 @@ public sealed class LinuxTrash : ITrash
             // Not installed
             return false;
         }
+    }
+}
+
+/// <summary>
+/// Installs a desktop entry for wherever this app is running from, and makes it the default for
+/// the formats it can open. Other formats stay with whatever viewer handled them before.
+/// </summary>
+public sealed class LinuxDefaultViewer : IDefaultViewer
+{
+    private const string DesktopFile = "imageviewer.desktop";
+
+    private static readonly string[] MimeTypes =
+    {
+        "image/bmp", "image/gif", "image/jpeg", "image/png", "image/webp", "image/vnd.microsoft.icon", "image/vnd.wap.wbmp"
+    };
+
+    public async Task<string> MakeDefault()
+    {
+        var data = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify);
+        var applications = Path.Combine(data, "applications");
+        var icons = Path.Combine(data, "icons", "hicolor", "512x512", "apps");
+        Directory.CreateDirectory(applications);
+        Directory.CreateDirectory(icons);
+
+        await File.WriteAllTextAsync(Path.Combine(applications, DesktopFile), GetDesktopEntry(GetProgramPath()));
+
+        await using (var icon = typeof(LinuxDefaultViewer).Assembly.GetManifestResourceStream("imageviewer.png")!)
+        await using (var file = File.Create(Path.Combine(icons, "imageviewer.png")))
+        {
+            await icon.CopyToAsync(file);
+        }
+
+        if (!await LinuxTrash.TryRun("xdg-mime", ["default", DesktopFile, .. MimeTypes]))
+            throw new IOException("Couldn't set the default viewer. Install xdg-utils and try again.");
+
+        return "Image Viewer now opens BMP, GIF, ICO, JPEG, PNG, WBMP and WebP files. "
+            + "If you move the app, set it as the default again.";
+    }
+
+    /// <summary>
+    /// The AppImage runtime sets $APPIMAGE. The running binary is inside a mount that goes away on exit.
+    /// </summary>
+    internal static string GetProgramPath() =>
+        Environment.GetEnvironmentVariable("APPIMAGE")
+        ?? Environment.ProcessPath
+        ?? throw new IOException("Couldn't find where the app is installed.");
+
+    internal static string GetDesktopEntry(string program) => $"""
+        [Desktop Entry]
+        Type=Application
+        Name=Image Viewer
+        Comment=Fast and private image viewer
+        Exec={QuoteForExec(program)} %f
+        Icon=imageviewer
+        Terminal=false
+        Categories=Graphics;Viewer;
+        MimeType={string.Join(';', MimeTypes)};
+
+        """;
+
+    /// <summary>
+    /// Exec has its own quoting, and the whole value is then escaped again as a desktop entry string
+    /// </summary>
+    private static string QuoteForExec(string path)
+    {
+        var quoted = new StringBuilder("\"");
+        foreach (var c in path)
+        {
+            if (c is '"' or '`' or '$' or '\\')
+                quoted.Append('\\');
+            quoted.Append(c);
+        }
+        quoted.Append('"');
+        return quoted.ToString().Replace("\\", "\\\\").Replace("%", "%%");
     }
 }
 

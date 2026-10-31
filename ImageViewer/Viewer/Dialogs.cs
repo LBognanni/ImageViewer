@@ -1,3 +1,6 @@
+using System;
+using System.ComponentModel;
+using System.IO;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -53,7 +56,7 @@ public sealed class MessageDialog : Window
 
 public sealed class SettingsDialog : Window
 {
-    public SettingsDialog(ISettingsStorage settingsStorage, Settings settings)
+    public SettingsDialog(ISettingsStorage settingsStorage, Settings settings, IDefaultViewer defaultViewer)
     {
         App.EnsureDialogTheme();
 
@@ -69,6 +72,19 @@ public sealed class SettingsDialog : Window
             ItemsSource = new[] { "Fit to screen", "Actual size" },
             SelectedIndex = (int)settings.DefaultZoom,
             MinWidth = 160
+        };
+
+        var makeDefault = new Button { Content = "Set as default image viewer" };
+        makeDefault.Click += async (_, _) =>
+        {
+            try
+            {
+                await MessageDialog.Show(this, await defaultViewer.MakeDefault());
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException or Win32Exception)
+            {
+                await MessageDialog.Show(this, e.Message);
+            }
         };
 
         var ok = new Button { Content = "Ok", IsDefault = true, MinWidth = 80 };
@@ -100,6 +116,7 @@ public sealed class SettingsDialog : Window
                         zoom
                     }
                 },
+                makeDefault,
                 new StackPanel
                 {
                     Orientation = Orientation.Horizontal,

@@ -6,9 +6,13 @@ using Avalonia.Platform;
 
 namespace ImageViewer;
 
-public sealed class MacPlatform : ITrash, IClickThrough
+public sealed class MacPlatform : ITrash, IClickThrough, IDefaultViewer
 {
     private const string ObjC = "/usr/lib/libobjc.A.dylib";
+
+    public Task<string> MakeDefault() => Task.FromResult(
+        "In Finder, select an image and choose File > Get Info. Pick Image Viewer under Open With, "
+        + "then press Change All. Repeat this for each image type.");
 
     public Task MoveToTrash(string fileName)
     {

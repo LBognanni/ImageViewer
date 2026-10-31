@@ -76,7 +76,7 @@ To add an action, update all of:
 
 Saved settings replace the default bindings entirely, so users with an existing settings file don't get new defaults. `GetHelpText` leaves actions with no binding out of the help overlay.
 
-**Platform services (`Platform/`).** Keep OS-specific code to a minimum, and look for a shared approach first. `ITrash` and `IClickThrough` have one implementation per OS because nothing shared exists, chosen by the `Platform` factory. Linux click-through goes through X11, and Linux trash through `gio` or `kioclient`. `ITrash` must never fall back to deleting permanently.
+**Platform services (`Platform/`).** Keep OS-specific code to a minimum, and look for a shared approach first. `ITrash`, `IClickThrough` and `IDefaultViewer` have one implementation per OS because nothing shared exists, chosen by the `Platform` factory. Linux click-through goes through X11, and Linux trash through `gio` or `kioclient`. `ITrash` must never fall back to deleting permanently. `IDefaultViewer` is the settings button: on Linux it installs a desktop entry and runs `xdg-mime`, Windows only lets the user choose in Settings (the installer registers the app there), and macOS shows instructions.
 
 **Transparency.** `Window.Opacity` doesn't reach `ImageDrawOperation`, so `ViewerWindow.ApplyOpacity` sets it and `ImageSurface.ImageOpacity` together. The operation clears what was there, then fades the background and image as one layer. Keys 2 to 6 apply a level immediately, and pressing the same one again makes the window solid. This one path is tested on X11 and XWayland.
 

@@ -67,7 +67,7 @@ public class ViewerWindowTests
 
         _navigator.Open(Path.Combine(_folder, first));
         _sut = new ViewerWindow(_navigator, _pipeline, new Mock<ISettingsStorage>().Object, _settings, tempData.Object,
-            _trash, _clickThrough.Object, decoder.Extensions, null, () => { });
+            _trash, _clickThrough.Object, new Mock<IDefaultViewer>().Object, decoder.Extensions, null, () => { });
         _sut.Show();
         Pump(() => _navigator.Count == 3);
     }
