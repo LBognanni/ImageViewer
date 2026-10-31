@@ -3,8 +3,8 @@
 !define PRODUCT_NAME "CodeMade Image Viewer"
 !define PRODUCT_VERSION ${VERSION}
 !define PRODUCT_EXE "imageviewer.exe"
-!define PRODUCT_PUBLISHER "www.codemade.co.uk"
-!define PRODUCT_WEB_SITE "http://www.codemade.co.uk/imageviewer/?from=winlink"
+!define PRODUCT_PUBLISHER "www.codemade.net"
+!define PRODUCT_WEB_SITE "http://www.codemade.net/imageviewer/?from=winlink"
 !define PRODUCT_DIR_REGKEY "Software\Microsoft\Windows\CurrentVersion\App Paths\CodeMadeImageViewer.exe"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
 !define PRODUCT_UNINST_ROOT_KEY "HKLM"
@@ -27,8 +27,6 @@ SetCompressor lzma
 
 ; Welcome page
 !insertmacro MUI_PAGE_WELCOME
-; License page
-!insertmacro MUI_PAGE_LICENSE "eula.txt"
 ; Components page
 !insertmacro MUI_PAGE_COMPONENTS
 ; Directory page
@@ -71,7 +69,10 @@ Section "-MainSection" SEC01
   SetOverwrite ifnewer
   File "..\output\ImageViewer.exe"
   File "..\output\*.dll"
-  File "eula.txt"
+  File "..\LICENSE.md"
+
+  ; The license of versions before 2.0
+  Delete "$INSTDIR\eula.txt"
 
   CreateDirectory "$SMPROGRAMS\$ICONS_GROUP"
   CreateShortCut "$SMPROGRAMS\$ICONS_GROUP\${PRODUCT_NAME}.lnk" "$INSTDIR\ImageViewer.exe"
@@ -132,7 +133,7 @@ Section Uninstall
   ReadRegStr $ICONS_GROUP ${PRODUCT_UNINST_ROOT_KEY} "${PRODUCT_UNINST_KEY}" "${PRODUCT_STARTMENU_REGVAL}"
   Delete "$INSTDIR\ImageViewer.exe"
   Delete "$INSTDIR\*.dll"
-  Delete "$INSTDIR\eula.txt"
+  Delete "$INSTDIR\LICENSE.md"
   Delete "$INSTDIR\uninst.exe"
 
   ; Left behind by versions before the Avalonia rebuild

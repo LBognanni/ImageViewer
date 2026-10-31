@@ -5,7 +5,7 @@
     <key>CFBundleName</key>
     <string>Image Viewer</string>
     <key>CFBundleIdentifier</key>
-    <string>uk.co.codemade.imageviewer</string>
+    <string>net.codemade.imageviewer</string>
     <key>CFBundleExecutable</key>
     <string>ImageViewer</string>
     <key>CFBundleIconFile</key>

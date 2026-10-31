@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyDescription("A no-frills image viewer. Supports most image formats.")]
-[assembly: AssemblyCopyright("Copyright © Loris Bognanni http://codemade.co.uk/")]
+[assembly: AssemblyCopyright("Copyright © Loris Bognanni http://codemade.net/")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
