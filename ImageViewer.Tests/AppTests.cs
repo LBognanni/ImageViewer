@@ -1,5 +1,4 @@
 using NUnit.Framework;
-using NUnit.Framework.Legacy;
 
 namespace ImageViewer.Tests;
 
@@ -9,6 +8,6 @@ public class AppTests
     [Test]
     public void TheAppHasItsOwnName()
     {
-        ClassicAssert.AreEqual("Image Viewer", new App(null!).Name);
+        Assert.That(new App(null!).Name, Is.EqualTo("Image Viewer"));
     }
 }

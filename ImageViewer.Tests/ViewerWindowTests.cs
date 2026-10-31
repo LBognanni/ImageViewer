@@ -1,4 +1,3 @@
-using NUnit.Framework.Legacy;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -110,7 +109,7 @@ public class ViewerWindowTests
     public void ShowsTheFileInTheTitle()
     {
         Open();
-        ClassicAssert.AreEqual("a.jpg - Image Viewer", _sut.Title);
+        Assert.That(_sut.Title, Is.EqualTo("a.jpg - Image Viewer"));
     }
 
     [AvaloniaTest]
@@ -118,10 +117,10 @@ public class ViewerWindowTests
     {
         Open();
         Press(PhysicalKey.ArrowRight);
-        ClassicAssert.AreEqual("b.jpg - Image Viewer", _sut.Title);
+        Assert.That(_sut.Title, Is.EqualTo("b.jpg - Image Viewer"));
         Press(PhysicalKey.ArrowLeft);
         Press(PhysicalKey.ArrowLeft);
-        ClassicAssert.AreEqual("c.jpg - Image Viewer", _sut.Title);
+        Assert.That(_sut.Title, Is.EqualTo("c.jpg - Image Viewer"));
     }
 
     [AvaloniaTest]
@@ -129,7 +128,7 @@ public class ViewerWindowTests
     {
         Open();
         Press(PhysicalKey.J);
-        ClassicAssert.AreEqual("a.jpg - Image Viewer", _sut.Title);
+        Assert.That(_sut.Title, Is.EqualTo("a.jpg - Image Viewer"));
     }
 
     [AvaloniaTest]
@@ -137,10 +136,10 @@ public class ViewerWindowTests
     {
         Open();
         Press(PhysicalKey.R);
-        ClassicAssert.AreEqual(270, _sut.Surface.Rotation);
+        Assert.That(_sut.Surface.Rotation, Is.EqualTo(270));
         Press(PhysicalKey.R, RawInputModifiers.Shift);
         Press(PhysicalKey.R, RawInputModifiers.Shift);
-        ClassicAssert.AreEqual(90, _sut.Surface.Rotation);
+        Assert.That(_sut.Surface.Rotation, Is.EqualTo(90));
     }
 
     [AvaloniaTest]
@@ -150,8 +149,8 @@ public class ViewerWindowTests
         Press(PhysicalKey.R);
         Press(PhysicalKey.Digit1);
         Press(PhysicalKey.ArrowRight);
-        ClassicAssert.AreEqual(0, _sut.Surface.Rotation);
-        ClassicAssert.AreEqual(0m, _sut.Surface.Zoom);
+        Assert.That(_sut.Surface.Rotation, Is.EqualTo(0));
+        Assert.That(_sut.Surface.Zoom, Is.EqualTo(0m));
     }
 
     [AvaloniaTest]
@@ -159,9 +158,9 @@ public class ViewerWindowTests
     {
         Open();
         Press(PhysicalKey.Digit1);
-        ClassicAssert.AreEqual(1m, _sut.Surface.Zoom);
+        Assert.That(_sut.Surface.Zoom, Is.EqualTo(1m));
         Press(PhysicalKey.Digit1);
-        ClassicAssert.AreEqual(0m, _sut.Surface.Zoom);
+        Assert.That(_sut.Surface.Zoom, Is.EqualTo(0m));
     }
 
     [AvaloniaTest]
@@ -174,7 +173,7 @@ public class ViewerWindowTests
             var settings = new Settings();
             settings.KeyBindings = new Dictionary<string, KeyBinding> { { "X", new KeyBinding(action) } };
             var sheet = HelpSheet.Build(_sut.HelpSections, settings, _sut.ActionNames, Array.Empty<string>());
-            ClassicAssert.AreEqual(1, sheet.Sections.Sum(s => s.Rows.Count), action);
+            Assert.That(sheet.Sections.Sum(s => s.Rows.Count), Is.EqualTo(1), action);
         }
     }
 
@@ -183,9 +182,9 @@ public class ViewerWindowTests
     {
         Open();
         Press(PhysicalKey.H);
-        ClassicAssert.IsTrue(_sut.Help.IsOpen);
+        Assert.That(_sut.Help.IsOpen, Is.True);
         Press(PhysicalKey.H);
-        ClassicAssert.IsFalse(_sut.Help.IsOpen);
+        Assert.That(_sut.Help.IsOpen, Is.False);
     }
 
     [AvaloniaTest]
@@ -194,11 +193,11 @@ public class ViewerWindowTests
         Open();
         Press(PhysicalKey.H);
         Press(PhysicalKey.Escape);
-        ClassicAssert.IsFalse(_sut.Help.IsOpen);
-        ClassicAssert.IsTrue(_sut.IsVisible);
+        Assert.That(_sut.Help.IsOpen, Is.False);
+        Assert.That(_sut.IsVisible, Is.True);
 
         Press(PhysicalKey.Escape);
-        ClassicAssert.IsFalse(_sut.IsVisible);
+        Assert.That(_sut.IsVisible, Is.False);
     }
 
     [AvaloniaTest]
@@ -208,8 +207,8 @@ public class ViewerWindowTests
         var first = _navigator.Current!;
         Press(PhysicalKey.D);
         Pump(() => _navigator.Count == 2);
-        ClassicAssert.AreEqual(new[] { first }, _trash.Trashed);
-        ClassicAssert.AreEqual("b.jpg - Image Viewer", _sut.Title);
+        Assert.That(_trash.Trashed, Is.EqualTo(new[] { first }));
+        Assert.That(_sut.Title, Is.EqualTo("b.jpg - Image Viewer"));
     }
 
     [AvaloniaTest]
@@ -219,7 +218,7 @@ public class ViewerWindowTests
         _trash.Fail = new OperationCanceledException();
         Press(PhysicalKey.D);
         Dispatcher.UIThread.RunJobs();
-        ClassicAssert.AreEqual(3, _navigator.Count);
+        Assert.That(_navigator.Count, Is.EqualTo(3));
     }
 
     [AvaloniaTest]
@@ -227,16 +226,16 @@ public class ViewerWindowTests
     {
         Open();
         Press(PhysicalKey.F);
-        ClassicAssert.AreEqual(WindowState.FullScreen, _sut.WindowState);
-        ClassicAssert.IsTrue(_sut.Topmost);
+        Assert.That(_sut.WindowState, Is.EqualTo(WindowState.FullScreen));
+        Assert.That(_sut.Topmost, Is.True);
 
         Press(PhysicalKey.Escape);
-        ClassicAssert.AreEqual(WindowState.Maximized, _sut.WindowState);
-        ClassicAssert.IsFalse(_sut.Topmost);
-        ClassicAssert.IsTrue(_sut.IsVisible);
+        Assert.That(_sut.WindowState, Is.EqualTo(WindowState.Maximized));
+        Assert.That(_sut.Topmost, Is.False);
+        Assert.That(_sut.IsVisible, Is.True);
 
         Press(PhysicalKey.Escape);
-        ClassicAssert.IsFalse(_sut.IsVisible);
+        Assert.That(_sut.IsVisible, Is.False);
     }
 
     [AvaloniaTest]
@@ -244,9 +243,9 @@ public class ViewerWindowTests
     {
         Open();
         Press(PhysicalKey.B);
-        ClassicAssert.AreEqual(WindowDecorations.None, _sut.WindowDecorations);
+        Assert.That(_sut.WindowDecorations, Is.EqualTo(WindowDecorations.None));
         Press(PhysicalKey.B);
-        ClassicAssert.AreEqual(WindowDecorations.Full, _sut.WindowDecorations);
+        Assert.That(_sut.WindowDecorations, Is.EqualTo(WindowDecorations.Full));
     }
 
     [AvaloniaTest]
@@ -254,9 +253,9 @@ public class ViewerWindowTests
     {
         Open();
         Press(PhysicalKey.T);
-        ClassicAssert.IsTrue(_sut.Topmost);
+        Assert.That(_sut.Topmost, Is.True);
         Press(PhysicalKey.T);
-        ClassicAssert.IsFalse(_sut.Topmost);
+        Assert.That(_sut.Topmost, Is.False);
     }
 
     [AvaloniaTest]
@@ -264,17 +263,17 @@ public class ViewerWindowTests
     {
         Open();
         Press(PhysicalKey.Digit2);
-        ClassicAssert.AreEqual(.1, _sut.Opacity);
-        ClassicAssert.AreEqual(.1, _sut.Surface.ImageOpacity);
-        ClassicAssert.AreEqual("Transparency: 1/5", _sut.Overlay.Text);
+        Assert.That(_sut.Opacity, Is.EqualTo(.1));
+        Assert.That(_sut.Surface.ImageOpacity, Is.EqualTo(.1));
+        Assert.That(_sut.Overlay.Text, Is.EqualTo("Transparency: 1/5"));
 
         Press(PhysicalKey.Digit6);
-        ClassicAssert.AreEqual(.75, _sut.Surface.ImageOpacity);
-        ClassicAssert.AreEqual("Transparency: 5/5", _sut.Overlay.Text);
+        Assert.That(_sut.Surface.ImageOpacity, Is.EqualTo(.75));
+        Assert.That(_sut.Overlay.Text, Is.EqualTo("Transparency: 5/5"));
 
         using var wait = new CancellationTokenSource(1200);
         Dispatcher.UIThread.MainLoop(wait.Token);
-        ClassicAssert.AreEqual(.75, _sut.Surface.ImageOpacity, "the level should stay");
+        Assert.That(_sut.Surface.ImageOpacity, Is.EqualTo(.75), "the level should stay");
     }
 
     [AvaloniaTest]
@@ -283,9 +282,9 @@ public class ViewerWindowTests
         Open();
         Press(PhysicalKey.Digit3);
         Press(PhysicalKey.Digit3);
-        ClassicAssert.AreEqual(1, _sut.Opacity);
-        ClassicAssert.AreEqual(1, _sut.Surface.ImageOpacity);
-        ClassicAssert.AreEqual("Transparency off", _sut.Overlay.Text);
+        Assert.That(_sut.Opacity, Is.EqualTo(1));
+        Assert.That(_sut.Surface.ImageOpacity, Is.EqualTo(1));
+        Assert.That(_sut.Overlay.Text, Is.EqualTo("Transparency off"));
     }
 
     [AvaloniaTest]
@@ -298,7 +297,7 @@ public class ViewerWindowTests
         _sut.Surface.ImageOpacity = .3;
         Dispatcher.UIThread.RunJobs();
 
-        ClassicAssert.Less(PixelAt(_sut.Width / 2, _sut.Height / 2).Red, solid.Red * .6);
+        Assert.That(PixelAt(_sut.Width / 2, _sut.Height / 2).Red, Is.LessThan(solid.Red * .6));
     }
 
     [AvaloniaTest]
@@ -306,7 +305,7 @@ public class ViewerWindowTests
     {
         Open();
         Press(PhysicalKey.Q);
-        ClassicAssert.IsFalse(_sut.IsVisible);
+        Assert.That(_sut.IsVisible, Is.False);
     }
 
     [AvaloniaTest]
@@ -314,9 +313,9 @@ public class ViewerWindowTests
     {
         Open();
         Press(PhysicalKey.A);
-        ClassicAssert.AreEqual("Autoplay ON", _sut.Overlay.Text);
+        Assert.That(_sut.Overlay.Text, Is.EqualTo("Autoplay ON"));
         Press(PhysicalKey.A);
-        ClassicAssert.AreEqual("Autoplay OFF", _sut.Overlay.Text);
+        Assert.That(_sut.Overlay.Text, Is.EqualTo("Autoplay OFF"));
     }
 
     [AvaloniaTest]
@@ -326,16 +325,16 @@ public class ViewerWindowTests
         Press(PhysicalKey.A);
 
         Press(PhysicalKey.NumPadAdd);
-        ClassicAssert.AreEqual("Autoplay interval: 1800ms", _sut.Overlay.Text);
+        Assert.That(_sut.Overlay.Text, Is.EqualTo("Autoplay interval: 1800ms"));
         Press(PhysicalKey.Equal);
-        ClassicAssert.AreEqual("Autoplay interval: 1620ms", _sut.Overlay.Text);
+        Assert.That(_sut.Overlay.Text, Is.EqualTo("Autoplay interval: 1620ms"));
         Press(PhysicalKey.Equal, RawInputModifiers.Shift);
-        ClassicAssert.AreEqual("Autoplay interval: 1458ms", _sut.Overlay.Text);
+        Assert.That(_sut.Overlay.Text, Is.EqualTo("Autoplay interval: 1458ms"));
 
         Press(PhysicalKey.NumPadSubtract);
-        ClassicAssert.AreEqual("Autoplay interval: 1621ms", _sut.Overlay.Text);
+        Assert.That(_sut.Overlay.Text, Is.EqualTo("Autoplay interval: 1621ms"));
         Press(PhysicalKey.Minus);
-        ClassicAssert.AreEqual("Autoplay interval: 1802ms", _sut.Overlay.Text);
+        Assert.That(_sut.Overlay.Text, Is.EqualTo("Autoplay interval: 1802ms"));
     }
 
     [AvaloniaTest]
@@ -343,7 +342,7 @@ public class ViewerWindowTests
     {
         Open();
         Press(PhysicalKey.W);
-        StringAssert.Contains("click-thru", _sut.Overlay.Text);
+        Assert.That(_sut.Overlay.Text, Does.Contain("click-thru"));
         Press(PhysicalKey.W);
         _clickThrough.Verify(c => c.TrySet(It.IsAny<IPlatformHandle>(), false), Times.AtLeastOnce);
     }
@@ -361,7 +360,7 @@ public class ViewerWindowTests
     {
         Open();
         Press(PhysicalKey.S);
-        ClassicAssert.AreEqual("a.jpg - Image Viewer", _sut.Title);
+        Assert.That(_sut.Title, Is.EqualTo("a.jpg - Image Viewer"));
     }
 
     [AvaloniaTest]
@@ -383,9 +382,9 @@ public class ViewerWindowTests
         Open();
         Pump(() => HasSharpImage(_navigator.Current!));
         var center = PixelAt(_sut.Width / 2, _sut.Height / 2);
-        ClassicAssert.Greater(center.Red, 45);
-        ClassicAssert.Less(center.Red, 75);
-        ClassicAssert.Less(center.Blue, 55);
+        Assert.That(center.Red, Is.GreaterThan(45));
+        Assert.That(center.Red, Is.LessThan(75));
+        Assert.That(center.Blue, Is.LessThan(55));
     }
 
     [AvaloniaTest]
@@ -399,7 +398,7 @@ public class ViewerWindowTests
         Dispatcher.UIThread.RunJobs();
 
         var center = PixelAt(_sut.Width / 2, _sut.Height / 2);
-        ClassicAssert.Greater(center.Red, 105, "the next image should show on the same frame");
+        Assert.That(center.Red, Is.GreaterThan(105), "the next image should show on the same frame");
     }
 
     private bool HasSharpImage(string path)

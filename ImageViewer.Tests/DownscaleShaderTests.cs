@@ -1,5 +1,4 @@
 using NUnit.Framework;
-using NUnit.Framework.Legacy;
 using SkiaSharp;
 
 namespace ImageViewer.Tests;
@@ -25,7 +24,7 @@ public class DownscaleShaderTests
             ImageDrawOperation.DrawDownscaled(canvas, image, 4);
         }
 
-        ClassicAssert.AreEqual(SKColors.Red, target.GetPixel(50, 50));
+        Assert.That(target.GetPixel(50, 50), Is.EqualTo(SKColors.Red));
     }
 
     [Test]
@@ -50,7 +49,7 @@ public class DownscaleShaderTests
         }
 
         var pixel = target.GetPixel(50, 50);
-        ClassicAssert.Greater(pixel.Red, 90);
-        ClassicAssert.Less(pixel.Red, 165);
+        Assert.That(pixel.Red, Is.GreaterThan(90));
+        Assert.That(pixel.Red, Is.LessThan(165));
     }
 }

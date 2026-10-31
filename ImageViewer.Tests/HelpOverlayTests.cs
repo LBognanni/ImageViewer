@@ -1,7 +1,6 @@
 using System.Linq;
 using Avalonia;
 using NUnit.Framework;
-using NUnit.Framework.Legacy;
 
 namespace ImageViewer.Tests;
 
@@ -15,20 +14,20 @@ public class HelpOverlayTests
     public void SplitsSectionsInOrderWhereTheColumnsBalance()
     {
         var columns = HelpOverlay.SplitInTwo(new[] { 2, 2, 4, 3, 6 }.Select(Section).ToList());
-        CollectionAssert.AreEqual(new[] { "2", "2", "4" }, columns[0].Select(s => s.Title));
-        CollectionAssert.AreEqual(new[] { "3", "6" }, columns[1].Select(s => s.Title));
+        Assert.That(columns[0].Select(s => s.Title), Is.EqualTo(new[] { "2", "2", "4" }));
+        Assert.That(columns[1].Select(s => s.Title), Is.EqualTo(new[] { "3", "6" }));
     }
 
     [Test]
     public void ASingleSectionMakesOneColumn()
     {
-        ClassicAssert.AreEqual(1, HelpOverlay.SplitInTwo(new[] { Section(5) }).Count);
+        Assert.That(HelpOverlay.SplitInTwo(new[] { Section(5) }).Count, Is.EqualTo(1));
     }
 
     [Test]
     public void APanelThatFitsKeepsItsSize()
     {
-        ClassicAssert.AreEqual(1, HelpOverlay.FitScale(new Size(100, 100), new Size(1000, 1000)));
+        Assert.That(HelpOverlay.FitScale(new Size(100, 100), new Size(1000, 1000)), Is.EqualTo(1));
     }
 
     [TestCase(100, 200, 1000, 150)]
@@ -36,7 +35,7 @@ public class HelpOverlayTests
     public void APanelThatDoesNotFitShrinksIntoTheSpace(int width, int height, int availableWidth, int availableHeight)
     {
         var scale = HelpOverlay.FitScale(new Size(width, height), new Size(availableWidth, availableHeight));
-        ClassicAssert.LessOrEqual(width * scale, availableWidth);
-        ClassicAssert.LessOrEqual(height * scale, availableHeight);
+        Assert.That(width * scale, Is.LessThanOrEqualTo(availableWidth));
+        Assert.That(height * scale, Is.LessThanOrEqualTo(availableHeight));
     }
 }

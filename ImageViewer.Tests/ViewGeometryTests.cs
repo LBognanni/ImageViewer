@@ -1,4 +1,3 @@
-using NUnit.Framework.Legacy;
 using NUnit.Framework;
 using SkiaSharp;
 
@@ -10,27 +9,27 @@ public class ViewGeometryTests
     [Test]
     public void BestFit_LeavesSmallImagesAtActualSize()
     {
-        ClassicAssert.AreEqual(1f, ViewGeometry.EffectiveZoom(TestImages.Info(100, 100), 0, 0, 800, 600));
+        Assert.That(ViewGeometry.EffectiveZoom(TestImages.Info(100, 100), 0, 0, 800, 600), Is.EqualTo(1f));
     }
 
     [Test]
     public void BestFit_ScalesLargeImagesDown()
     {
-        ClassicAssert.AreEqual(0.5f, ViewGeometry.EffectiveZoom(TestImages.Info(1600, 800), 0, 0, 800, 600));
+        Assert.That(ViewGeometry.EffectiveZoom(TestImages.Info(1600, 800), 0, 0, 800, 600), Is.EqualTo(0.5f));
     }
 
     [Test]
     public void BestFit_AccountsForRotation()
     {
-        ClassicAssert.AreEqual(0.5f, ViewGeometry.EffectiveZoom(TestImages.Info(800, 1600), 90, 0, 800, 800));
+        Assert.That(ViewGeometry.EffectiveZoom(TestImages.Info(800, 1600), 90, 0, 800, 800), Is.EqualTo(0.5f));
     }
 
     [Test]
     public void BestFit_AccountsForExifOrientation()
     {
         var info = TestImages.Info(1600, 800, SKEncodedOrigin.RightTop);
-        ClassicAssert.AreEqual((800, 1600), ViewGeometry.DisplaySize(info, 0));
-        ClassicAssert.AreEqual((1600, 800), ViewGeometry.DisplaySize(info, 90));
+        Assert.That(ViewGeometry.DisplaySize(info, 0), Is.EqualTo((800, 1600)));
+        Assert.That(ViewGeometry.DisplaySize(info, 90), Is.EqualTo((1600, 800)));
     }
 
     [Test]
@@ -40,8 +39,8 @@ public class ViewGeometryTests
         var matrix = ViewGeometry.Transform(TestImages.Info(100, 100), 100, 100, 0, 1, default, 1600, 1200);
         var corner = matrix.MapPoint(0, 0);
         var opposite = matrix.MapPoint(100, 100);
-        ClassicAssert.AreEqual(100, opposite.X - corner.X);
-        ClassicAssert.AreEqual(100, opposite.Y - corner.Y);
+        Assert.That(opposite.X - corner.X, Is.EqualTo(100));
+        Assert.That(opposite.Y - corner.Y, Is.EqualTo(100));
     }
 
     [Test]
@@ -50,8 +49,8 @@ public class ViewGeometryTests
         var info = TestImages.Info(4000, 2000);
         var full = ViewGeometry.Transform(info, 4000, 2000, 0, 0, default, 800, 600).MapPoint(4000, 2000);
         var quarter = ViewGeometry.Transform(info, 1000, 500, 0, 0, default, 800, 600).MapPoint(1000, 500);
-        ClassicAssert.AreEqual(full.X, quarter.X, 1);
-        ClassicAssert.AreEqual(full.Y, quarter.Y, 1);
+        Assert.That(quarter.X, Is.EqualTo(full.X).Within(1));
+        Assert.That(quarter.Y, Is.EqualTo(full.Y).Within(1));
     }
 
     [Test]
@@ -59,8 +58,8 @@ public class ViewGeometryTests
     {
         var matrix = ViewGeometry.Transform(TestImages.Info(100, 50), 100, 50, 0, 1, default, 800, 600);
         var center = matrix.MapPoint(50, 25);
-        ClassicAssert.AreEqual(400, center.X, 1);
-        ClassicAssert.AreEqual(300, center.Y, 1);
+        Assert.That(center.X, Is.EqualTo(400).Within(1));
+        Assert.That(center.Y, Is.EqualTo(300).Within(1));
     }
 
     [Test]
@@ -68,8 +67,8 @@ public class ViewGeometryTests
     {
         var matrix = ViewGeometry.Transform(TestImages.Info(100, 50), 100, 50, 0, 1, new SKPoint(10, -20), 800, 600);
         var center = matrix.MapPoint(50, 25);
-        ClassicAssert.AreEqual(410, center.X, 1);
-        ClassicAssert.AreEqual(280, center.Y, 1);
+        Assert.That(center.X, Is.EqualTo(410).Within(1));
+        Assert.That(center.Y, Is.EqualTo(280).Within(1));
     }
 
     [Test]
@@ -78,8 +77,8 @@ public class ViewGeometryTests
         // The top left corner of the image ends up at the top right
         var matrix = ViewGeometry.Transform(TestImages.Info(100, 50), 100, 50, 90, 1, default, 800, 600);
         var point = matrix.MapPoint(0, 0);
-        ClassicAssert.Greater(point.X, 400);
-        ClassicAssert.Less(point.Y, 300);
+        Assert.That(point.X, Is.GreaterThan(400));
+        Assert.That(point.Y, Is.LessThan(300));
     }
 
     [TestCase(SKEncodedOrigin.TopLeft, false, false)]
@@ -94,7 +93,7 @@ public class ViewGeometryTests
     {
         var matrix = ViewGeometry.Transform(TestImages.Info(100, 50, origin), 100, 50, 0, 1, default, 800, 600);
         var point = matrix.MapPoint(0, 0);
-        ClassicAssert.AreEqual(right, point.X > 400, "horizontal");
-        ClassicAssert.AreEqual(bottom, point.Y > 300, "vertical");
+        Assert.That(point.X > 400, Is.EqualTo(right), "horizontal");
+        Assert.That(point.Y > 300, Is.EqualTo(bottom), "vertical");
     }
 }

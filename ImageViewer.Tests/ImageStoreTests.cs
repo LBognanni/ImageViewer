@@ -1,4 +1,3 @@
-using NUnit.Framework.Legacy;
 using System.Collections.Generic;
 using NUnit.Framework;
 
@@ -16,8 +15,8 @@ public class ImageStoreTests
         var sut = new ImageStore(OneImage * 10);
         sut.Add(TestImages.Handle("a", ImageTier.Instant));
         sut.Add(TestImages.Handle("a", ImageTier.Screen));
-        ClassicAssert.AreEqual(OneImage, sut.Bytes);
-        ClassicAssert.IsTrue(sut.Has("a", ImageTier.Instant));
+        Assert.That(sut.Bytes, Is.EqualTo(OneImage));
+        Assert.That(sut.Has("a", ImageTier.Instant), Is.True);
     }
 
     [Test]
@@ -25,8 +24,8 @@ public class ImageStoreTests
     {
         var sut = new ImageStore(OneImage * 10);
         sut.Add(TestImages.Handle("a", ImageTier.Screen));
-        ClassicAssert.IsTrue(sut.Has("a", ImageTier.Screen));
-        ClassicAssert.IsFalse(sut.Has("a", ImageTier.Full));
+        Assert.That(sut.Has("a", ImageTier.Screen), Is.True);
+        Assert.That(sut.Has("a", ImageTier.Full), Is.False);
     }
 
     [Test]
@@ -36,7 +35,7 @@ public class ImageStoreTests
         sut.Add(TestImages.Handle("a", ImageTier.Screen));
         sut.Add(TestImages.Handle("a", ImageTier.Full));
         var best = sut.AcquireBest("a");
-        ClassicAssert.AreEqual(ImageTier.Full, best!.Tier);
+        Assert.That(best!.Tier, Is.EqualTo(ImageTier.Full));
         best.Release();
     }
 
@@ -49,9 +48,9 @@ public class ImageStoreTests
         sut.Add(TestImages.Handle("far", ImageTier.Screen));
         sut.Add(TestImages.Handle("now", ImageTier.Screen));
 
-        ClassicAssert.IsTrue(sut.Has("next", ImageTier.Screen));
-        ClassicAssert.IsTrue(sut.Has("now", ImageTier.Screen));
-        ClassicAssert.IsFalse(sut.Has("far", ImageTier.Screen));
+        Assert.That(sut.Has("next", ImageTier.Screen), Is.True);
+        Assert.That(sut.Has("now", ImageTier.Screen), Is.True);
+        Assert.That(sut.Has("far", ImageTier.Screen), Is.False);
     }
 
     [Test]
@@ -61,7 +60,7 @@ public class ImageStoreTests
         sut.Add(TestImages.Handle("old", ImageTier.Screen));
         sut.SetRanks(new Dictionary<string, int> { ["now"] = 0 });
         sut.Add(TestImages.Handle("now", ImageTier.Screen));
-        ClassicAssert.IsFalse(sut.Has("old", ImageTier.Screen));
+        Assert.That(sut.Has("old", ImageTier.Screen), Is.False);
     }
 
     [Test]
@@ -70,7 +69,7 @@ public class ImageStoreTests
         var sut = new ImageStore(1);
         sut.SetRanks(new Dictionary<string, int> { ["now"] = 0 });
         sut.Add(TestImages.Handle("now", ImageTier.Full));
-        ClassicAssert.IsTrue(sut.Has("now", ImageTier.Full));
+        Assert.That(sut.Has("now", ImageTier.Full), Is.True);
     }
 
     [Test]
@@ -82,11 +81,11 @@ public class ImageStoreTests
 
         sut.Remove("a");
 
-        ClassicAssert.AreEqual(0, sut.Bytes);
-        ClassicAssert.Greater(held.Image.Width, 0);
-        ClassicAssert.IsTrue(held.TryAcquire(), "the pixels should still be alive");
+        Assert.That(sut.Bytes, Is.EqualTo(0));
+        Assert.That(held.Image.Width, Is.GreaterThan(0));
+        Assert.That(held.TryAcquire(), Is.True, "the pixels should still be alive");
         held.Release();
         held.Release();
-        ClassicAssert.IsFalse(held.TryAcquire(), "the last release should free the pixels");
+        Assert.That(held.TryAcquire(), Is.False, "the last release should free the pixels");
     }
 }

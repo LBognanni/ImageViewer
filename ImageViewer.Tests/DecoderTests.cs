@@ -1,4 +1,3 @@
-using NUnit.Framework.Legacy;
 using System.Collections.Generic;
 using System.IO;
 using Moq;
@@ -16,9 +15,9 @@ public class DecoderTests : LocalPathTests
     public void CanDecodeAFile()
     {
         var decoded = _sut.Decode(LocalPath(Path.Combine("testimages", "red.png")), null);
-        ClassicAssert.IsNotNull(decoded);
-        ClassicAssert.AreEqual(10, decoded!.Image.Width);
-        ClassicAssert.AreEqual(10, decoded.Source.Height);
+        Assert.That(decoded, Is.Not.Null);
+        Assert.That(decoded!.Image.Width, Is.EqualTo(10));
+        Assert.That(decoded.Source.Height, Is.EqualTo(10));
     }
 
     [Test]
@@ -26,19 +25,19 @@ public class DecoderTests : LocalPathTests
     {
         var path = Path.GetTempFileName();
         File.WriteAllText(path, "not an image");
-        ClassicAssert.IsNull(_sut.Decode(path, null));
-        ClassicAssert.IsNull(_sut.Probe(path));
+        Assert.That(_sut.Decode(path, null), Is.Null);
+        Assert.That(_sut.Probe(path), Is.Null);
     }
 
     [Test]
     public void JpegHasCheapScaling_AndDecodesSmallerThanFull()
     {
         var path = TestImages.Jpeg(1600, 800, SKColors.Blue);
-        ClassicAssert.IsTrue(_sut.Probe(path)!.HasCheapScaling);
+        Assert.That(_sut.Probe(path)!.HasCheapScaling, Is.True);
 
         var decoded = _sut.Decode(path, new SKSizeI(400, 400))!;
-        ClassicAssert.AreEqual(400, decoded.Image.Width);
-        ClassicAssert.AreEqual(1600, decoded.Source.Width);
+        Assert.That(decoded.Image.Width, Is.EqualTo(400));
+        Assert.That(decoded.Source.Width, Is.EqualTo(1600));
     }
 
     [Test]
@@ -48,7 +47,7 @@ public class DecoderTests : LocalPathTests
         var decoded = _sut.Decode(path, new SKSizeI(500, 500))!;
 
         // The closest eighth above 500 is 3/8
-        ClassicAssert.AreEqual(600, decoded.Image.Width);
+        Assert.That(decoded.Image.Width, Is.EqualTo(600));
     }
 
     [Test]
@@ -62,8 +61,8 @@ public class DecoderTests : LocalPathTests
             File.WriteAllBytes(path, data.ToArray());
         }
 
-        ClassicAssert.IsFalse(_sut.Probe(path)!.HasCheapScaling);
-        ClassicAssert.AreEqual(800, _sut.Decode(path, new SKSizeI(200, 200))!.Image.Width);
+        Assert.That(_sut.Probe(path)!.HasCheapScaling, Is.False);
+        Assert.That(_sut.Decode(path, new SKSizeI(200, 200))!.Image.Width, Is.EqualTo(800));
     }
 
     [TestCase((ushort)1, SKEncodedOrigin.TopLeft)]
@@ -74,7 +73,7 @@ public class DecoderTests : LocalPathTests
     {
         var path = TestImages.Jpeg(32, 16, SKColors.Blue);
         TestImages.AddExifOrientation(path, orientation);
-        ClassicAssert.AreEqual(expected, _sut.Probe(path)!.Origin);
+        Assert.That(_sut.Probe(path)!.Origin, Is.EqualTo(expected));
     }
 
     [Test]
@@ -86,8 +85,8 @@ public class DecoderTests : LocalPathTests
 
         var info = new DecoderChain(new[] { other.Object, owner.Object }).Probe("file.XYZ");
 
-        ClassicAssert.IsNotNull(info);
-        ClassicAssert.AreEqual(new[] { "owner" }, calls);
+        Assert.That(info, Is.Not.Null);
+        Assert.That(calls, Is.EqualTo(new[] { "owner" }));
     }
 
     [Test]
@@ -99,8 +98,8 @@ public class DecoderTests : LocalPathTests
 
         var info = new DecoderChain(new[] { other.Object, owner.Object }).Probe("file.xyz");
 
-        ClassicAssert.IsNotNull(info);
-        ClassicAssert.AreEqual(new[] { "owner", "other" }, calls);
+        Assert.That(info, Is.Not.Null);
+        Assert.That(calls, Is.EqualTo(new[] { "owner", "other" }));
     }
 
     [Test]
@@ -111,8 +110,8 @@ public class DecoderTests : LocalPathTests
             FakeDecoder(".abc", new(), "a", null).Object,
             FakeDecoder(".xyz", new(), "b", null).Object
         });
-        ClassicAssert.IsTrue(chain.Extensions.Contains(".ABC"));
-        ClassicAssert.IsTrue(chain.Extensions.Contains(".xyz"));
+        Assert.That(chain.Extensions.Contains(".ABC"), Is.True);
+        Assert.That(chain.Extensions.Contains(".xyz"), Is.True);
     }
 
     private static Mock<IImageDecoder> FakeDecoder(string extension, List<string> calls, string name, ImageInfo? result)

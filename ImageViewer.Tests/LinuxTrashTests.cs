@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using NUnit.Framework;
-using NUnit.Framework.Legacy;
 
 namespace ImageViewer.Tests;
 
@@ -42,8 +41,8 @@ public class LinuxTrashTests
             Assert.Inconclusive("No trash tool is installed here");
         }
 
-        ClassicAssert.IsFalse(File.Exists(file));
-        ClassicAssert.IsTrue(File.Exists(Path.Combine(_dataHome, "Trash", "files", "image.jpg")));
+        Assert.That(File.Exists(file), Is.False);
+        Assert.That(File.Exists(Path.Combine(_dataHome, "Trash", "files", "image.jpg")), Is.True);
     }
 
     [Test]

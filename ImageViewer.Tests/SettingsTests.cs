@@ -1,4 +1,3 @@
-using NUnit.Framework.Legacy;
 using System.IO;
 using System.Threading.Tasks;
 using Avalonia.Input;
@@ -21,7 +20,7 @@ public class SettingsTests
     [TestCase("Next", Key.PageDown, KeyModifiers.None)]
     public void ParsesKeysWrittenForWinForms(string text, Key key, KeyModifiers modifiers)
     {
-        ClassicAssert.AreEqual(new KeyCombination(key, modifiers), KeyParser.Parse(text));
+        Assert.That(KeyParser.Parse(text), Is.EqualTo(new KeyCombination(key, modifiers)));
     }
 
     [TestCase("")]
@@ -30,7 +29,7 @@ public class SettingsTests
     [TestCase("A|B")]
     public void InvalidKeysParseToNull(string text)
     {
-        ClassicAssert.IsNull(KeyParser.Parse(text));
+        Assert.That(KeyParser.Parse(text), Is.Null);
     }
 
     [Test]
@@ -39,10 +38,10 @@ public class SettingsTests
         var settings = new Settings();
         foreach (var key in settings.KeyBindings.Keys)
         {
-            ClassicAssert.IsNotNull(KeyParser.Parse(key), key);
+            Assert.That(KeyParser.Parse(key), Is.Not.Null, key);
         }
-        ClassicAssert.IsTrue(settings.TryGetKeyBindingFor(new KeyCombination(Key.R, KeyModifiers.Shift), out var binding));
-        ClassicAssert.AreEqual("RotateImageInv", binding!.Action);
+        Assert.That(settings.TryGetKeyBindingFor(new KeyCombination(Key.R, KeyModifiers.Shift), out var binding), Is.True);
+        Assert.That(binding!.Action, Is.EqualTo("RotateImageInv"));
     }
 
     [Test]
@@ -72,12 +71,12 @@ public class SettingsTests
 
         var settings = await new SettingsJsonStorage(path).LoadSettings();
 
-        ClassicAssert.IsTrue(settings.StartInFullScreen);
-        ClassicAssert.AreEqual(1m, settings.DefaultZoom);
-        ClassicAssert.AreEqual(2, settings.KeyBindings.Count, "saved bindings replace the defaults");
-        ClassicAssert.IsTrue(settings.TryGetKeyBindingFor(new KeyCombination(Key.OemPlus, KeyModifiers.None), out var binding));
-        ClassicAssert.AreEqual("NextImage", binding!.Action);
-        ClassicAssert.IsTrue(settings.KeyBindings["X"].IsDeleteAction);
+        Assert.That(settings.StartInFullScreen, Is.True);
+        Assert.That(settings.DefaultZoom, Is.EqualTo(1m));
+        Assert.That(settings.KeyBindings.Count, Is.EqualTo(2), "saved bindings replace the defaults");
+        Assert.That(settings.TryGetKeyBindingFor(new KeyCombination(Key.OemPlus, KeyModifiers.None), out var binding), Is.True);
+        Assert.That(binding!.Action, Is.EqualTo("NextImage"));
+        Assert.That(settings.KeyBindings["X"].IsDeleteAction, Is.True);
     }
 
     [Test]
@@ -90,9 +89,9 @@ public class SettingsTests
         await sut.SaveSettings(settings);
         var loaded = await sut.LoadSettings();
 
-        ClassicAssert.AreEqual(1m, loaded.DefaultZoom);
-        ClassicAssert.IsTrue(loaded.StartInFullScreen);
-        ClassicAssert.AreEqual(settings.KeyBindings.Count, loaded.KeyBindings.Count);
+        Assert.That(loaded.DefaultZoom, Is.EqualTo(1m));
+        Assert.That(loaded.StartInFullScreen, Is.True);
+        Assert.That(loaded.KeyBindings.Count, Is.EqualTo(settings.KeyBindings.Count));
     }
 
     [Test]
@@ -100,6 +99,6 @@ public class SettingsTests
     {
         var sut = new SettingsJsonStorage(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
         var settings = await sut.LoadSettings();
-        ClassicAssert.AreEqual(0m, settings.DefaultZoom);
+        Assert.That(settings.DefaultZoom, Is.EqualTo(0m));
     }
 }

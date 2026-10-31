@@ -1,4 +1,3 @@
-using NUnit.Framework.Legacy;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -23,7 +22,7 @@ public class ImagePipelineTests
         sut.SetWindow(new[] { "a", "b" }, false);
         WaitUntil(() => decoder.Log.Count >= 3);
 
-        ClassicAssert.AreEqual(new[] { "a:640", "a:1920", "b:1920" }, decoder.Log.ToArray());
+        Assert.That(decoder.Log.ToArray(), Is.EqualTo(new[] { "a:640", "a:1920", "b:1920" }));
     }
 
     [Test]
@@ -35,7 +34,7 @@ public class ImagePipelineTests
         sut.SetWindow(new[] { "a", "b", "c" }, true);
         WaitUntil(() => decoder.Log.Count >= 6);
 
-        ClassicAssert.AreEqual(new[] { "a:640", "b:640", "c:640", "a:1920", "b:1920", "c:1920" }, decoder.Log.ToArray());
+        Assert.That(decoder.Log.ToArray(), Is.EqualTo(new[] { "a:640", "b:640", "c:640", "a:1920", "b:1920", "c:1920" }));
     }
 
     [Test]
@@ -52,7 +51,7 @@ public class ImagePipelineTests
         decoder.Gate.Set();
         WaitUntil(() => decoder.Log.Contains("new:1920"));
 
-        ClassicAssert.IsFalse(decoder.Log.Any(l => l.StartsWith("old2") || l.StartsWith("old3")));
+        Assert.That(decoder.Log.Any(l => l.StartsWith("old2") || l.StartsWith("old3")), Is.False);
     }
 
     [Test]
@@ -65,7 +64,7 @@ public class ImagePipelineTests
         WaitUntil(() => HasTier(sut, "a", ImageTier.Screen));
         Thread.Sleep(50);
 
-        ClassicAssert.AreEqual(new[] { "a:1920" }, decoder.Log.ToArray());
+        Assert.That(decoder.Log.ToArray(), Is.EqualTo(new[] { "a:1920" }));
     }
 
     [Test]
@@ -79,7 +78,7 @@ public class ImagePipelineTests
         sut.RequestFull("a");
         WaitUntil(() => HasTier(sut, "a", ImageTier.Full));
 
-        ClassicAssert.Contains("a:full", decoder.Log.ToArray());
+        Assert.That(decoder.Log.ToArray(), Does.Contain("a:full"));
     }
 
     [Test]
@@ -91,7 +90,7 @@ public class ImagePipelineTests
         sut.SetWindow(new[] { "a" }, false);
         WaitUntil(() => HasTier(sut, "a", ImageTier.Full));
 
-        ClassicAssert.IsFalse(decoder.Log.Contains("a:1920"));
+        Assert.That(decoder.Log.Contains("a:1920"), Is.False);
     }
 
     [Test]
@@ -104,7 +103,7 @@ public class ImagePipelineTests
         WaitUntil(() => HasTier(sut, "a", ImageTier.Full));
 
         var handle = sut.AcquireBest("a")!;
-        ClassicAssert.Greater(handle.Image.Width, 0);
+        Assert.That(handle.Image.Width, Is.GreaterThan(0));
         handle.Release();
     }
 
@@ -118,8 +117,8 @@ public class ImagePipelineTests
         WaitUntil(() => HasTier(sut, path, ImageTier.Screen));
 
         var handle = sut.AcquireBest(path)!;
-        ClassicAssert.Greater(handle.Background.Red, 240);
-        ClassicAssert.Less(handle.Background.Green, 15);
+        Assert.That(handle.Background.Red, Is.GreaterThan(240));
+        Assert.That(handle.Background.Green, Is.LessThan(15));
         handle.Release();
     }
 

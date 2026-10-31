@@ -1,4 +1,3 @@
-using NUnit.Framework.Legacy;
 using System;
 using System.IO;
 using NUnit.Framework;
@@ -27,7 +26,7 @@ public class FileBasedTempDataTests
     [Test]
     public void WhenNoData_NullIsReturned()
     {
-        ClassicAssert.IsNull(new FileBasedTempData(_file).ReadTime("aa"));
+        Assert.That(new FileBasedTempData(_file).ReadTime("aa"), Is.Null);
     }
 
     [Test]
@@ -48,6 +47,6 @@ public class FileBasedTempDataTests
         var sut = new FileBasedTempData(_file);
         sut.WriteTime("test", DateTime.Now);
         File.WriteAllText(_file, "{ not json");
-        ClassicAssert.IsNull(sut.ReadTime("test"));
+        Assert.That(sut.ReadTime("test"), Is.Null);
     }
 }

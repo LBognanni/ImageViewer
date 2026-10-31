@@ -1,4 +1,3 @@
-using NUnit.Framework.Legacy;
 using System.Collections.Generic;
 using NUnit.Framework;
 
@@ -10,8 +9,8 @@ public class FileUtilitesTests
     public void SplitCommand_WorksAsExpected(string command, string expectedExe, string expectedParams)
     {
         var (exe, parameters) = FileUtilites.SplitCommand(command);
-        ClassicAssert.AreEqual(expectedExe, exe);
-        ClassicAssert.AreEqual(expectedParams, parameters);
+        Assert.That(exe, Is.EqualTo(expectedExe));
+        Assert.That(parameters, Is.EqualTo(expectedParams));
     }
 
     private static IEnumerable<string[]> GetSplitCases()

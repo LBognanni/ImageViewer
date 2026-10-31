@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
-using NUnit.Framework.Legacy;
 
 namespace ImageViewer.Tests;
 
@@ -32,46 +31,46 @@ public class HelpSheetTests
     [TestCase("D7", "7")]
     public void FormatsKeys(string keys, string expected)
     {
-        CollectionAssert.AreEqual(new[] { new HelpRow(expected, "one") }, Rows((keys, "One")));
+        Assert.That(Rows((keys, "One")), Is.EqualTo(new[] { new HelpRow(expected, "one") }));
     }
 
     [Test]
     public void KeysThatReadTheSameAreListedOnce()
     {
         var rows = Rows(("Add", "One"), ("OemPlus", "One"), ("Shift|OemPlus", "One"));
-        CollectionAssert.AreEqual(new[] { new HelpRow("+", "one") }, rows);
+        Assert.That(rows, Is.EqualTo(new[] { new HelpRow("+", "one") }));
     }
 
     [Test]
     public void RelatedActionsShareALine()
     {
-        CollectionAssert.AreEqual(new[] { new HelpRow("← →", "pair") }, Rows(("Left", "Back"), ("Right", "Forward")));
+        Assert.That(Rows(("Left", "Back"), ("Right", "Forward")), Is.EqualTo(new[] { new HelpRow("← →", "pair") }));
     }
 
     [Test]
     public void RelatedActionsSplitWhenTheKeysWouldNotLineUp()
     {
         var rows = Rows(("Left", "Back"), ("P", "Back"), ("Right", "Forward"));
-        CollectionAssert.AreEqual(new[] { new HelpRow("← / P", "back"), new HelpRow("→", "forward") }, rows);
+        Assert.That(rows, Is.EqualTo(new[] { new HelpRow("← / P", "back"), new HelpRow("→", "forward") }));
     }
 
     [Test]
     public void ARunOfDigitsSharesALine()
     {
         var rows = Rows(("D2", "Level1"), ("D3", "Level2"), ("D4", "Level3"));
-        CollectionAssert.AreEqual(new[] { new HelpRow("2–4", "levels") }, rows);
+        Assert.That(rows, Is.EqualTo(new[] { new HelpRow("2–4", "levels") }));
     }
 
     [Test]
     public void KeysThatAreNotARunSplit()
     {
-        ClassicAssert.AreEqual(3, Rows(("D2", "Level1"), ("D3", "Level2"), ("X", "Level3")).Count());
+        Assert.That(Rows(("D2", "Level1"), ("D3", "Level2"), ("X", "Level3")).Count(), Is.EqualTo(3));
     }
 
     [Test]
     public void ListsCustomCommandsByProgramName()
     {
         var rows = Rows(("G", new KeyBinding { Command = "\"/usr/bin/gimp\" {0}" }));
-        CollectionAssert.AreEqual(new[] { new HelpRow("G", "gimp") }, rows);
+        Assert.That(rows, Is.EqualTo(new[] { new HelpRow("G", "gimp") }));
     }
 }

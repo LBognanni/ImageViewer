@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using NUnit.Framework;
-using NUnit.Framework.Legacy;
 
 namespace ImageViewer.Tests;
 
@@ -53,25 +52,25 @@ public class LinuxDefaultViewerTests
         }
 
         var entry = await File.ReadAllTextAsync(Path.Combine(_home, "data", "applications", "imageviewer.desktop"));
-        StringAssert.Contains("Exec=\"/opt/ImageViewer.AppImage\" %f", entry);
-        ClassicAssert.IsTrue(File.Exists(Path.Combine(_home, "data", "icons", "hicolor", "512x512", "apps", "imageviewer.png")));
+        Assert.That(entry, Does.Contain("Exec=\"/opt/ImageViewer.AppImage\" %f"));
+        Assert.That(File.Exists(Path.Combine(_home, "data", "icons", "hicolor", "512x512", "apps", "imageviewer.png")), Is.True);
 
         var defaults = await File.ReadAllTextAsync(Path.Combine(_home, "config", "mimeapps.list"));
-        StringAssert.Contains("image/jpeg=imageviewer.desktop", defaults);
+        Assert.That(defaults, Does.Contain("image/jpeg=imageviewer.desktop"));
     }
 
     [Test]
     public void ThePathComesFromTheAppImage_NotItsTemporaryMount()
     {
         Environment.SetEnvironmentVariable("APPIMAGE", "/opt/ImageViewer.AppImage");
-        ClassicAssert.AreEqual("/opt/ImageViewer.AppImage", LinuxDefaultViewer.GetProgramPath());
+        Assert.That(LinuxDefaultViewer.GetProgramPath(), Is.EqualTo("/opt/ImageViewer.AppImage"));
     }
 
     [Test]
     public void WithoutAnAppImage_ThePathIsThisProgram()
     {
         Environment.SetEnvironmentVariable("APPIMAGE", null);
-        ClassicAssert.AreEqual(Environment.ProcessPath, LinuxDefaultViewer.GetProgramPath());
+        Assert.That(LinuxDefaultViewer.GetProgramPath(), Is.EqualTo(Environment.ProcessPath));
     }
 
     [TestCase("/home/me/my apps/viewer", "Exec=\"/home/me/my apps/viewer\" %f")]
@@ -79,6 +78,6 @@ public class LinuxDefaultViewerTests
     [TestCase("/home/me/$x/viewer", "Exec=\"/home/me/\\\\$x/viewer\" %f")]
     public void ThePathIsQuotedForTheDesktopEntry(string path, string expected)
     {
-        StringAssert.Contains(expected, LinuxDefaultViewer.GetDesktopEntry(path));
+        Assert.That(LinuxDefaultViewer.GetDesktopEntry(path), Does.Contain(expected));
     }
 }

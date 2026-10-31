@@ -1,4 +1,3 @@
-using NUnit.Framework.Legacy;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -40,27 +39,27 @@ public class NavigatorTests
     public void Open_ShowsTheFileBeforeTheFolderIsKnown()
     {
         _sut.Open("b");
-        ClassicAssert.AreEqual("b", _sut.Current);
-        ClassicAssert.AreEqual(new[] { "b" }, _window.Last);
+        Assert.That(_sut.Current, Is.EqualTo("b"));
+        Assert.That(_window.Last, Is.EqualTo(new[] { "b" }));
     }
 
     [Test]
     public void ApplyFolder_KeepsTheCurrentFile()
     {
         OpenFolder("c", "a", "b", "c", "d");
-        ClassicAssert.AreEqual("c", _sut.Current);
-        ClassicAssert.AreEqual(4, _sut.Count);
-        ClassicAssert.AreEqual("d", _window.Last[1]);
+        Assert.That(_sut.Current, Is.EqualTo("c"));
+        Assert.That(_sut.Count, Is.EqualTo(4));
+        Assert.That(_window.Last[1], Is.EqualTo("d"));
     }
 
     [Test]
     public void ApplyFolder_KeepsAFileTheListingDoesNotRecognize()
     {
         OpenFolder("b.tiff", "a.jpg", "c.jpg");
-        ClassicAssert.AreEqual("b.tiff", _sut.Current);
-        ClassicAssert.AreEqual(3, _sut.Count);
+        Assert.That(_sut.Current, Is.EqualTo("b.tiff"));
+        Assert.That(_sut.Count, Is.EqualTo(3));
         Move(_sut.Next);
-        ClassicAssert.AreEqual("c.jpg", _sut.Current);
+        Assert.That(_sut.Current, Is.EqualTo("c.jpg"));
     }
 
     [Test]
@@ -68,7 +67,7 @@ public class NavigatorTests
     {
         OpenFolder("b", "a", "b");
         Move(_sut.Next);
-        ClassicAssert.AreEqual("a", _sut.Current);
+        Assert.That(_sut.Current, Is.EqualTo("a"));
     }
 
     [Test]
@@ -76,7 +75,7 @@ public class NavigatorTests
     {
         OpenFolder("a", "a", "b");
         Move(_sut.Previous);
-        ClassicAssert.AreEqual("b", _sut.Current);
+        Assert.That(_sut.Current, Is.EqualTo("b"));
     }
 
     [Test]
@@ -85,28 +84,28 @@ public class NavigatorTests
         OpenFolder("c", "a", "b", "c", "d", "e", "f", "g", "h");
 
         Move(_sut.Next);
-        ClassicAssert.AreEqual(new[] { "d", "e", "c", "f", "g", "h" }, _window.Last);
+        Assert.That(_window.Last, Is.EqualTo(new[] { "d", "e", "c", "f", "g", "h" }));
 
         Move(_sut.Previous);
-        ClassicAssert.AreEqual(new[] { "c", "b", "d", "a", "h", "g" }, _window.Last);
+        Assert.That(_window.Last, Is.EqualTo(new[] { "c", "b", "d", "a", "h", "g" }));
     }
 
     [Test]
     public void PrefetchWindowHasNoDuplicatesInSmallFolders()
     {
         OpenFolder("a", "a", "b");
-        ClassicAssert.AreEqual(new[] { "a", "b" }, _window.Last);
+        Assert.That(_window.Last, Is.EqualTo(new[] { "a", "b" }));
     }
 
     [Test]
     public void Upcoming_FollowsTheDirectionOfTravel()
     {
         OpenFolder("b", "a", "b", "c");
-        ClassicAssert.AreEqual("c", _sut.Upcoming);
+        Assert.That(_sut.Upcoming, Is.EqualTo("c"));
         Move(_sut.Previous);
         Move(_sut.Previous);
-        ClassicAssert.AreEqual("c", _sut.Current);
-        ClassicAssert.AreEqual("b", _sut.Upcoming);
+        Assert.That(_sut.Current, Is.EqualTo("c"));
+        Assert.That(_sut.Upcoming, Is.EqualTo("b"));
     }
 
     [Test]
@@ -115,14 +114,14 @@ public class NavigatorTests
         OpenFolder("a", "a", "b", "c", "d");
 
         Move(_sut.Next);
-        ClassicAssert.IsFalse(_window.LastRapid);
+        Assert.That(_window.LastRapid, Is.False);
 
         _now = _now.AddMilliseconds(30);
         _sut.Next();
-        ClassicAssert.IsTrue(_window.LastRapid);
+        Assert.That(_window.LastRapid, Is.True);
 
         Move(_sut.Next);
-        ClassicAssert.IsFalse(_window.LastRapid);
+        Assert.That(_window.LastRapid, Is.False);
     }
 
     [Test]
@@ -130,8 +129,8 @@ public class NavigatorTests
     {
         OpenFolder("b", "a", "b", "c");
         _sut.RemoveCurrent();
-        ClassicAssert.AreEqual("c", _sut.Current);
-        ClassicAssert.AreEqual(2, _sut.Count);
+        Assert.That(_sut.Current, Is.EqualTo("c"));
+        Assert.That(_sut.Count, Is.EqualTo(2));
     }
 
     [Test]
@@ -139,7 +138,7 @@ public class NavigatorTests
     {
         OpenFolder("c", "a", "b", "c");
         _sut.RemoveCurrent();
-        ClassicAssert.AreEqual("a", _sut.Current);
+        Assert.That(_sut.Current, Is.EqualTo("a"));
     }
 
     [Test]
@@ -148,8 +147,8 @@ public class NavigatorTests
         var files = Enumerable.Range(0, 50).Select(i => i.ToString()).ToArray();
         OpenFolder("7", files);
         _sut.Shuffle();
-        ClassicAssert.AreEqual("7", _sut.Current);
-        ClassicAssert.AreEqual(50, _sut.Count);
+        Assert.That(_sut.Current, Is.EqualTo("7"));
+        Assert.That(_sut.Count, Is.EqualTo(50));
     }
 
     [Test]
@@ -159,7 +158,7 @@ public class NavigatorTests
         var notified = 0;
         _sut.CurrentChanged += () => notified++;
         Move(_sut.Next);
-        ClassicAssert.AreEqual(1, notified);
+        Assert.That(notified, Is.EqualTo(1));
     }
 
     [Test]
@@ -173,7 +172,7 @@ public class NavigatorTests
         var extensions = new SkiaImageDecoder().Extensions;
         var files = await Navigator.ListFolder(folder, extensions);
 
-        ClassicAssert.AreEqual(new[] { "a.jpg", "B.JPG" }, files.Select(Path.GetFileName).ToArray());
+        Assert.That(files.Select(Path.GetFileName).ToArray(), Is.EqualTo(new[] { "a.jpg", "B.JPG" }));
     }
 
     private sealed class FakeWindow : IImageWindow
