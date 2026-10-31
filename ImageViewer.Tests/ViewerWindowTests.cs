@@ -202,6 +202,26 @@ public class ViewerWindowTests
     }
 
     [AvaloniaTest]
+    public void AnimationsPlayUntilYouMoveOn()
+    {
+        Open();
+        var gif = Path.Combine(_folder, "animated.gif");
+        File.Move(TestImages.Gif(4, 4, new GifFrame(0, 0, 4, 4, 1, 20), new GifFrame(0, 0, 4, 4, 2, 20)), gif);
+        _sut.OpenFile(gif);
+        Pump(() => _sut.Surface.Shown?.Path == gif);
+
+        var first = _sut.Surface.Shown;
+        Pump(() => _sut.Surface.Shown != first);
+
+        Press(PhysicalKey.ArrowRight);
+        Pump(() => _sut.Surface.Shown?.Path != gif);
+        var next = _sut.Surface.Shown;
+        Thread.Sleep(50);
+        Dispatcher.UIThread.RunJobs();
+        Assert.That(_sut.Surface.Shown, Is.SameAs(next));
+    }
+
+    [AvaloniaTest]
     public void DeleteSendsTheFileToTheTrashAndMovesOn()
     {
         Open();

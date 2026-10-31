@@ -4,8 +4,83 @@ using SkiaSharp;
 
 namespace ImageViewer.Tests;
 
+/// <param name="Color">Index into <see cref="TestImages.GifPalette"/></param>
+/// <param name="DelayMs">Rounded down to tens of milliseconds, as GIF stores them</param>
+/// <param name="Disposal">1 keeps the frame, 3 restores what was there before it</param>
+public sealed record GifFrame(int X, int Y, int Width, int Height, byte Color, int DelayMs = 100, byte Disposal = 1);
+
 public static class TestImages
 {
+    public static readonly SKColor[] GifPalette = { SKColors.Black, SKColors.Red, SKColors.Lime, SKColors.Blue };
+
+    /// <summary>
+    /// Write a GIF frame by frame. SkiaSharp can't encode them, and this way tests can say exactly how frames overlap.
+    /// </summary>
+    public static string Gif(int width, int height, params GifFrame[] frames)
+    {
+        using var gif = new MemoryStream();
+        gif.Write("GIF89a"u8);
+        gif.Write(BitConverter.GetBytes((ushort)width));
+        gif.Write(BitConverter.GetBytes((ushort)height));
+        gif.Write(new byte[] { 0x81, 0, 0 });
+        foreach (var color in GifPalette)
+        {
+            gif.Write(new[] { color.Red, color.Green, color.Blue });
+        }
+
+        foreach (var frame in frames)
+        {
+            var delay = BitConverter.GetBytes((ushort)(frame.DelayMs / 10));
+            gif.Write(new byte[] { 0x21, 0xF9, 4, (byte)(frame.Disposal << 2), delay[0], delay[1], 0, 0, 0x2C });
+            foreach (var value in new[] { frame.X, frame.Y, frame.Width, frame.Height })
+            {
+                gif.Write(BitConverter.GetBytes((ushort)value));
+            }
+            gif.WriteByte(0);
+            gif.WriteByte(2);
+            WriteGifPixels(gif, frame);
+        }
+        gif.WriteByte(0x3B);
+
+        var path = Path.Combine(Path.GetTempPath(), $"imageviewer-test-{Guid.NewGuid():N}.gif");
+        File.WriteAllBytes(path, gif.ToArray());
+        return path;
+    }
+
+    /// <summary>
+    /// LZW without the compression: a clear code before each pixel keeps every code three bits wide
+    /// </summary>
+    private static void WriteGifPixels(Stream gif, GifFrame frame)
+    {
+        const int clear = 4, end = 5;
+        var bits = new System.Collections.BitArray(0);
+        void Add(int code)
+        {
+            for (var i = 0; i < 3; i++)
+            {
+                bits.Length++;
+                bits[bits.Length - 1] = (code >> i & 1) == 1;
+            }
+        }
+
+        for (var i = 0; i < frame.Width * frame.Height; i++)
+        {
+            Add(clear);
+            Add(frame.Color);
+        }
+        Add(end);
+
+        var bytes = new byte[(bits.Length + 7) / 8];
+        bits.CopyTo(bytes, 0);
+        for (var i = 0; i < bytes.Length; i += 255)
+        {
+            var length = Math.Min(255, bytes.Length - i);
+            gif.WriteByte((byte)length);
+            gif.Write(bytes, i, length);
+        }
+        gif.WriteByte(0);
+    }
+
     public static ImageInfo Info(int width, int height, SKEncodedOrigin origin = SKEncodedOrigin.TopLeft) =>
         new(width, height, origin, true);
 

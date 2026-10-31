@@ -34,6 +34,7 @@ public sealed class ViewerWindow : Window
     private readonly ImageSurface _surface;
     private readonly MessageOverlay _overlay = new();
     private readonly HelpOverlay _help = new();
+    private readonly AnimationPlayer _player;
     private readonly Dictionary<string, Action> _defaultActions;
     private readonly HelpSectionTemplate[] _helpSections;
 
@@ -139,6 +140,7 @@ public sealed class ViewerWindow : Window
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
 
         _surface = new ImageSurface(pipeline) { DefaultZoom = settings.DefaultZoom };
+        _player = new AnimationPlayer(_surface.ShowFrame);
         Content = new Panel { Children = { _surface, _help, _overlay } };
 
         if (settings.StartInFullScreen)
@@ -154,6 +156,7 @@ public sealed class ViewerWindow : Window
         Opened += OnOpened;
         Activated += OnActivated;
         Deactivated += OnDeactivated;
+        Closed += (_, _) => _player.Stop();
 
         if (_navigator.Current != null)
         {
@@ -183,6 +186,7 @@ public sealed class ViewerWindow : Window
         var current = _navigator.Current;
         Title = current == null ? "Image Viewer" : $"{Path.GetFileName(current)} - Image Viewer";
         _surface.Show(current, _navigator.Upcoming);
+        _player.Play(current);
     }
 
     private async void ListFolder()

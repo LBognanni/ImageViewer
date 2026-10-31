@@ -66,6 +66,8 @@ Tags have no `v` prefix. `GitHubVersionGetter` parses the tag of the latest rele
 
 **Rendering (`Viewer/`).** `ImageSurface` holds zoom, pan and rotation, and picks the best image available. `ImageDrawOperation` draws on the render thread through Skia. Images are drawn as GPU textures held by `TextureCache`, because a large image drawn from CPU memory costs over 100ms per frame. Textures have no mipmaps, which cuts first-draw time by about half: a shader averages samples when shrinking up to 6x, and mipmaps are only built past that. `ImageSurface` uploads the next image while idle. EXIF orientation and rotation are transforms at draw time (`ViewGeometry`), never pixel work. Geometry is in physical pixels, so actual size is correct at any display scaling. `MessageOverlay` and `HelpOverlay` are separate controls so that they don't redraw the image.
 
+**Animation.** The first frame of a GIF or WebP goes through the pipeline like any image. `AnimationPlayer` then plays the current file only, using `AnimatedImage`, and hands each frame to `ImageSurface.ShowFrame`. Frames stay out of `ImageStore`, so a long animation can't evict the images around it, and each goes through `TextureCache` as a new handle.
+
 **Keyboard actions.** `Settings.KeyBindings` maps key strings (combined with `|`, e.g. `Shift|R`) to a `KeyBinding`, which either names an action or holds a custom shell `Command` (`{0}` is replaced by the current file; `IsDeleteAction` removes it from the list afterwards). `KeyParser` reads them; the names began as WinForms `Keys` values, and existing settings files must keep working. `ViewerWindow.OnKeyDown` dispatches them.
 
 To add an action, update all of:

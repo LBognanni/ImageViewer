@@ -21,6 +21,7 @@ public sealed class ImageSurface : Avalonia.Controls.Control
     private string? _upcoming;
     private string? _preloaded;
     private ImageHandle? _image;
+    private ImageHandle? _frame;
     private ImageHandle? _preload;
     private Point _pan;
     private decimal _zoom;
@@ -120,6 +121,22 @@ public sealed class ImageSurface : Avalonia.Controls.Control
         }
     }
 
+    /// <summary>
+    /// Show a frame of an animation over the current image. Takes ownership of <paramref name="image"/>.
+    /// </summary>
+    public void ShowFrame(string path, SKImage image)
+    {
+        if (_image == null || _image.Path != path)
+        {
+            image.Dispose();
+            return;
+        }
+
+        _frame?.Release();
+        _frame = new ImageHandle(path, ImageTier.Full, image, _image.Source, _image.Background);
+        InvalidateVisual();
+    }
+
     private void Refresh()
     {
         if (_path != null)
@@ -127,6 +144,12 @@ public sealed class ImageSurface : Avalonia.Controls.Control
             var best = _pipeline.AcquireBest(_path);
             if (best != null)
             {
+                if (best.Path != _frame?.Path)
+                {
+                    _frame?.Release();
+                    _frame = null;
+                }
+
                 if (best == _image)
                 {
                     best.Release();
@@ -187,6 +210,8 @@ public sealed class ImageSurface : Avalonia.Controls.Control
         RequestFullIfNeeded();
     }
 
+    internal ImageHandle? Shown => _frame ?? _image;
+
     private double Scaling => Avalonia.Controls.TopLevel.GetTopLevel(this)?.RenderScaling ?? 1;
 
     private (float Width, float Height) ViewSize() =>
@@ -196,7 +221,8 @@ public sealed class ImageSurface : Avalonia.Controls.Control
     {
         var scaling = Scaling;
         var (viewWidth, viewHeight) = ViewSize();
-        var image = _image != null && _image.TryAcquire() ? _image : null;
+        var current = _frame ?? _image;
+        var image = current != null && current.TryAcquire() ? current : null;
         var matrix = SKMatrix.Identity;
         if (image != null)
         {
