@@ -64,17 +64,17 @@ Tags have no `v` prefix. `GitHubVersionGetter` parses the tag of the latest rele
 
 **Decoders (`Decoding/`).** `IImageDecoder` implementations go in the `DecoderChain` built in `Program.Main`, and their extensions become the formats the app lists. `SkiaImageDecoder` is the only one so far. SkiaSharp's libjpeg-turbo has no SIMD, and Magick.NET isn't faster once pixels are in BGRA, so a libjpeg-turbo binding is the known way to get faster JPEG decodes; Magick.NET would add formats, not speed.
 
-**Rendering (`Viewer/`).** `ImageSurface` holds zoom, pan and rotation, and picks the best image available. `ImageDrawOperation` draws on the render thread through Skia. Images are drawn as GPU textures held by `TextureCache`, because a large image drawn from CPU memory costs over 100ms per frame. Textures have no mipmaps, which cuts first-draw time by about half: a shader averages samples when shrinking up to 6x, and mipmaps are only built past that. `ImageSurface` uploads the next image while idle. EXIF orientation and rotation are transforms at draw time (`ViewGeometry`), never pixel work. Geometry is in physical pixels, so actual size is correct at any display scaling. `MessageOverlay` is a separate control so that fading messages don't redraw the image.
+**Rendering (`Viewer/`).** `ImageSurface` holds zoom, pan and rotation, and picks the best image available. `ImageDrawOperation` draws on the render thread through Skia. Images are drawn as GPU textures held by `TextureCache`, because a large image drawn from CPU memory costs over 100ms per frame. Textures have no mipmaps, which cuts first-draw time by about half: a shader averages samples when shrinking up to 6x, and mipmaps are only built past that. `ImageSurface` uploads the next image while idle. EXIF orientation and rotation are transforms at draw time (`ViewGeometry`), never pixel work. Geometry is in physical pixels, so actual size is correct at any display scaling. `MessageOverlay` and `HelpOverlay` are separate controls so that they don't redraw the image.
 
 **Keyboard actions.** `Settings.KeyBindings` maps key strings (combined with `|`, e.g. `Shift|R`) to a `KeyBinding`, which either names an action or holds a custom shell `Command` (`{0}` is replaced by the current file; `IsDeleteAction` removes it from the list afterwards). `KeyParser` reads them; the names began as WinForms `Keys` values, and existing settings files must keep working. `ViewerWindow.OnKeyDown` dispatches them.
 
 To add an action, update all of:
 
 1. `_defaultActions` in `ViewerWindow` (the action name to method map).
-2. `_actionDescriptions` in `ViewerWindow` (the help overlay).
+2. `_helpSections` in `ViewerWindow` (the help overlay).
 3. The default bindings in the `Settings` constructor.
 
-Saved settings replace the default bindings entirely, so users with an existing settings file don't get new defaults. `GetHelpText` leaves actions with no binding out of the help overlay.
+Saved settings replace the default bindings entirely, so users with an existing settings file don't get new defaults. `HelpSheet` leaves actions with no binding out of the help overlay, lists custom commands in their own section, and only merges related actions onto one line when their keys read sensibly together.
 
 **Platform services (`Platform/`).** Keep OS-specific code to a minimum, and look for a shared approach first. `ITrash`, `IClickThrough` and `IDefaultViewer` have one implementation per OS because nothing shared exists, chosen by the `Platform` factory. Linux click-through goes through X11, and Linux trash through `gio` or `kioclient`. `ITrash` must never fall back to deleting permanently. `IDefaultViewer` is the settings button: on Linux it installs a desktop entry and runs `xdg-mime`, Windows only lets the user choose in Settings (the installer registers the app there), and macOS shows instructions.
 

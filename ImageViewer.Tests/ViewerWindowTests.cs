@@ -165,22 +165,40 @@ public class ViewerWindowTests
     }
 
     [AvaloniaTest]
-    public void HelpListsTheKeyBindings()
+    public void HelpCoversEveryAction()
     {
         Open();
-        Press(PhysicalKey.H);
-        StringAssert.Contains("Rotate Image clockwise", _sut.Overlay.Text);
-        StringAssert.Contains("[⇧]+[R]", _sut.Overlay.Text);
+        // The help key has no row of its own: it's in the hint for closing the help
+        foreach (var action in _sut.ActionNames.Where(a => a != "ToggleHelpMessage"))
+        {
+            var settings = new Settings();
+            settings.KeyBindings = new Dictionary<string, KeyBinding> { { "X", new KeyBinding(action) } };
+            var sheet = HelpSheet.Build(_sut.HelpSections, settings, _sut.ActionNames, Array.Empty<string>());
+            ClassicAssert.AreEqual(1, sheet.Sections.Sum(s => s.Rows.Count), action);
+        }
     }
 
     [AvaloniaTest]
-    public void HelpSkipsActionsWithNoBinding()
+    public void HelpKeyTogglesTheHelp()
     {
-        var settings = new Settings();
-        settings.KeyBindings = settings.KeyBindings.Where(k => k.Key != "R").ToDictionary(k => k.Key, k => k.Value);
-        Open(settings: settings);
+        Open();
         Press(PhysicalKey.H);
-        StringAssert.DoesNotContain("Rotate Image clockwise", _sut.Overlay.Text);
+        ClassicAssert.IsTrue(_sut.Help.IsOpen);
+        Press(PhysicalKey.H);
+        ClassicAssert.IsFalse(_sut.Help.IsOpen);
+    }
+
+    [AvaloniaTest]
+    public void EscapeClosesTheHelpBeforeTheWindow()
+    {
+        Open();
+        Press(PhysicalKey.H);
+        Press(PhysicalKey.Escape);
+        ClassicAssert.IsFalse(_sut.Help.IsOpen);
+        ClassicAssert.IsTrue(_sut.IsVisible);
+
+        Press(PhysicalKey.Escape);
+        ClassicAssert.IsFalse(_sut.IsVisible);
     }
 
     [AvaloniaTest]

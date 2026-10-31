@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -34,8 +33,9 @@ public sealed class ViewerWindow : Window
 
     private readonly ImageSurface _surface;
     private readonly MessageOverlay _overlay = new();
+    private readonly HelpOverlay _help = new();
     private readonly Dictionary<string, Action> _defaultActions;
-    private readonly (string, string)[] _actionDescriptions;
+    private readonly HelpSectionTemplate[] _helpSections;
 
     private DispatcherTimer? _autoPlayTimer;
     private bool _isClickThrough;
@@ -46,6 +46,9 @@ public sealed class ViewerWindow : Window
 
     internal ImageSurface Surface => _surface;
     internal MessageOverlay Overlay => _overlay;
+    internal HelpOverlay Help => _help;
+    internal IReadOnlyCollection<string> ActionNames => _defaultActions.Keys;
+    internal IReadOnlyList<HelpSectionTemplate> HelpSections => _helpSections;
 
     public ViewerWindow(Navigator navigator, ImagePipeline pipeline, ISettingsStorage settingsStorage, Settings settings,
         ITempData tempData, ITrash trash, IClickThrough clickThrough, IDefaultViewer defaultViewer, IReadOnlySet<string> extensions,
@@ -91,32 +94,40 @@ public sealed class ViewerWindow : Window
             { nameof(ToggleClickThrough), ToggleClickThrough },
             { nameof(DeleteCurrentFile), DeleteCurrentFile }
         };
-        _actionDescriptions = new[]
+        _helpSections = new[]
         {
-            ( nameof(AutoPlay), "Toggle Autoplay" ),
-            ( nameof(AutoPlayFaster), "Autoplay Faster" ),
-            ( nameof(AutoPlaySlower), "Autoplay Slower" ),
-            ( nameof(ToggleZoom), "Toggle Zoom" ),
-            ( nameof(CopyFileName), "Copy File Name" ),
-            ( nameof(PreviousImage), "Previous Image" ),
-            ( nameof(NextImage), "Next Image" ),
-            ( nameof(ToggleBorderless), "Toggle Borderless" ),
-            ( nameof(ToggleFullScreen), "Toggle FullScreen" ),
-            ( nameof(ToggleTopMost), "Toggle TopMost" ),
-            ( nameof(ToggleClickThrough), "Toggle ClickThrough" ),
-            ( nameof(Transparency1), "Transparency: 1/5" ),
-            ( nameof(Transparency2), "Transparency: 2/5" ),
-            ( nameof(Transparency3), "Transparency: 3/5" ),
-            ( nameof(Transparency4), "Transparency: 4/5" ),
-            ( nameof(Transparency5), "Transparency: 5/5" ),
-            ( nameof(ReOpen), "Show the Open dialog" ),
-            ( nameof(ShowPreferences), "Show Preferences" ),
-            ( nameof(RotateImage), "Rotate Image clockwise" ),
-            ( nameof(RotateImageInv), "Rotate Image counter-clockwise" ),
-            ( nameof(Shuffle), "Shuffle" ),
-            ( nameof(DeleteCurrentFile), "Delete Current File"),
-            ( nameof(Close), "Quit" ),
-            ( nameof(ToggleHelpMessage), "Show this help message" ),
+            new HelpSectionTemplate("Browse",
+                new HelpItem("Previous / next",
+                    new HelpAction(nameof(PreviousImage), "Previous image"),
+                    new HelpAction(nameof(NextImage), "Next image")),
+                new HelpItem(nameof(Shuffle), "Shuffle")),
+            new HelpSectionTemplate("Slideshow",
+                new HelpItem(nameof(AutoPlay), "Play / pause"),
+                new HelpItem("Faster / slower",
+                    new HelpAction(nameof(AutoPlayFaster), "Faster"),
+                    new HelpAction(nameof(AutoPlaySlower), "Slower"))),
+            new HelpSectionTemplate("File",
+                new HelpItem(nameof(ReOpen), "Open…"),
+                new HelpItem(nameof(CopyFileName), "Copy file name"),
+                new HelpItem(nameof(DeleteCurrentFile), "Delete"),
+                new HelpItem(nameof(ShowPreferences), "Preferences"),
+                new HelpItem(nameof(Close), "Quit")),
+            new HelpSectionTemplate("View",
+                new HelpItem(nameof(ToggleZoom), "Fit / actual size"),
+                new HelpItem(nameof(RotateImage), "Rotate clockwise"),
+                new HelpItem(nameof(RotateImageInv), "Rotate counter-clockwise")),
+            new HelpSectionTemplate("Window",
+                new HelpItem(nameof(ToggleFullScreen), "Full screen"),
+                new HelpItem(nameof(ToggleBorderless), "Borderless"),
+                new HelpItem(nameof(ToggleTopMost), "Always on top"),
+                new HelpItem(nameof(ToggleClickThrough), "Click-through"),
+                new HelpItem("Transparency",
+                    new HelpAction(nameof(Transparency1), "Transparency 1/5"),
+                    new HelpAction(nameof(Transparency2), "Transparency 2/5"),
+                    new HelpAction(nameof(Transparency3), "Transparency 3/5"),
+                    new HelpAction(nameof(Transparency4), "Transparency 4/5"),
+                    new HelpAction(nameof(Transparency5), "Transparency 5/5")),
+                new HelpItem(nameof(ExitFullScreenOrClose), "Leave full screen / quit")),
         };
 
         Title = "Image Viewer";
@@ -128,7 +139,7 @@ public sealed class ViewerWindow : Window
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
 
         _surface = new ImageSurface(pipeline) { DefaultZoom = settings.DefaultZoom };
-        Content = new Panel { Children = { _surface, _overlay } };
+        Content = new Panel { Children = { _surface, _help, _overlay } };
 
         if (settings.StartInFullScreen)
         {
@@ -438,68 +449,28 @@ public sealed class ViewerWindow : Window
 
     private void ToggleHelpMessage()
     {
+        if (_help.IsOpen)
+        {
+            _help.Hide();
+            return;
+        }
+
         // Other messages give way to the help, which is what "Press H for help" promises
-        var help = GetHelpText();
-        if (_overlay.Text == help)
+        if (_overlay.HasMessage)
         {
             _overlay.HideMessage();
         }
-        else
-        {
-            _overlay.ShowMessage(help, 10000);
-        }
-    }
-
-    private string GetHelpText()
-    {
-        StringBuilder sb = new StringBuilder();
-        foreach (var (command, description) in _actionDescriptions)
-        {
-            var keyBinding = _settings.KeyBindings.FirstOrDefault(x => x.Value.Action == command);
-            // Settings saved by older versions may not have a binding for every action
-            if (keyBinding.Key != null)
-            {
-                sb.AppendFormat("{0}\t{1}\r\n", FormatKey(keyBinding.Key), description);
-            }
-        }
-        return sb.ToString();
-    }
-
-    private string FormatKey(string key)
-    {
-        if (key.Contains('|'))
-        {
-            return String.Join("+",
-                key.Split("|".ToCharArray(), StringSplitOptions.RemoveEmptyEntries).Select(FormatKey));
-        }
-
-        string k = key.ToLower() switch
-        {
-            "shift" => "⇧",
-            "left" => "←",
-            "right" => "→",
-            "add" => "+",
-            "subtract" => "-",
-            "d1" => "1",
-            "d2" => "2",
-            "d3" => "3",
-            "d4" => "4",
-            "d5" => "5",
-            "d6" => "6",
-            "d7" => "7",
-            "d8" => "8",
-            "d9" => "9",
-            "control" => "CTRL",
-            "controlkey" => "CTRL",
-            _ => key.ToUpper()
-        };
-
-        return $"[{k}]";
+        _help.Show(HelpSheet.Build(_helpSections, _settings, _defaultActions.Keys,
+            new[] { nameof(ToggleHelpMessage), nameof(ExitFullScreenOrClose) }));
     }
 
     private void ExitFullScreenOrClose()
     {
-        if (Topmost)
+        if (_help.IsOpen)
+        {
+            _help.Hide();
+        }
+        else if (Topmost)
         {
             ToggleFullScreen();
         }
