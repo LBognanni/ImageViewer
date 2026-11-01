@@ -409,6 +409,20 @@ public class ViewerWindowTests
     }
 
     [AvaloniaTest]
+    public void TransparentImagesGetACheckerboard()
+    {
+        Open();
+        var png = Path.Combine(_folder, "transparent.png");
+        File.Move(TestImages.Png(40, 40, SKColors.Transparent), png);
+        _sut.OpenFile(png);
+        Pump(() => _sut.Surface.Shown?.Path == png);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.That(PixelAt(6, 6), Is.EqualTo(new SKColor(0x80, 0x80, 0x80)));
+        Assert.That(PixelAt(18, 6), Is.EqualTo(new SKColor(0x58, 0x58, 0x58)));
+    }
+
+    [AvaloniaTest]
     public void TheNextImageIsPrefetchedBeforeMovingToIt()
     {
         Open();

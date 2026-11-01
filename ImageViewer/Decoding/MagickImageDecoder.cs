@@ -153,7 +153,8 @@ public sealed class MagickImageDecoder : IImageDecoder
     private static unsafe SKImage ToImage(MagickImage image)
     {
         int width = (int)image.Width, height = (int)image.Height;
-        var info = new SKImageInfo(width, height, SKImageInfo.PlatformColorType, SKAlphaType.Premul);
+        var alpha = image.HasAlpha ? SKAlphaType.Premul : SKAlphaType.Opaque;
+        var info = new SKImageInfo(width, height, SKImageInfo.PlatformColorType, alpha);
         using var bitmap = new SKBitmap(info);
         using var pixels = image.GetPixelsUnsafe();
 

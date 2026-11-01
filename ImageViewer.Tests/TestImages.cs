@@ -102,6 +102,29 @@ public static class TestImages
     }
 
     /// <summary>
+    /// A PNG with an alpha channel, whatever it holds, so nothing can tell without looking at the pixels
+    /// </summary>
+    /// <param name="width">Image width</param>
+    /// <param name="height">Image height</param>
+    /// <param name="color">The color of every pixel</param>
+    /// <param name="hole">One pixel to make fully transparent</param>
+    public static string Png(int width, int height, SKColor color, SKPointI? hole = null)
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"imageviewer-test-{Guid.NewGuid():N}.png");
+        using var bitmap = new SKBitmap(new SKImageInfo(width, height, SKColorType.Rgba8888, SKAlphaType.Unpremul));
+        bitmap.Erase(color);
+        if (hole != null)
+        {
+            bitmap.SetPixel(hole.Value.X, hole.Value.Y, SKColors.Transparent);
+        }
+
+        using var image = SKImage.FromBitmap(bitmap);
+        using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+        File.WriteAllBytes(path, data.ToArray());
+        return path;
+    }
+
+    /// <summary>
     /// Insert an EXIF block holding only an orientation tag after the JPEG start marker
     /// </summary>
     public static void AddExifOrientation(string jpegPath, ushort orientation)

@@ -42,7 +42,8 @@ public sealed class SkiaImageDecoder : IImageDecoder
     public static DecodedImage? Decode(SKCodec codec, ImageInfo source, SKSizeI? target)
     {
         var size = target == null ? codec.Info.Size : GetDecodeSize(codec, target.Value);
-        var info = new SKImageInfo(size.Width, size.Height, SKImageInfo.PlatformColorType, SKAlphaType.Premul);
+        var alpha = codec.Info.AlphaType == SKAlphaType.Opaque ? SKAlphaType.Opaque : SKAlphaType.Premul;
+        var info = new SKImageInfo(size.Width, size.Height, SKImageInfo.PlatformColorType, alpha);
 
         var bitmap = new SKBitmap(info);
         var result = codec.GetPixels(info, bitmap.GetPixels());

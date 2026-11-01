@@ -122,6 +122,40 @@ public class ImagePipelineTests
         handle.Release();
     }
 
+    [Test]
+    public void AHoleInTheMiddleCountsAsTransparency()
+    {
+        Assert.That(Decoded(TestImages.Png(37, 16, SKColors.Red, new SKPointI(18, 8))).HasTransparency, Is.True);
+    }
+
+    [Test]
+    public void TheVeryLastPixelCounts()
+    {
+        Assert.That(Decoded(TestImages.Png(37, 16, SKColors.Red, new SKPointI(36, 15))).HasTransparency, Is.True);
+    }
+
+    [Test]
+    public void AnAlphaChannelThatIsNeverUsedIsNotTransparency()
+    {
+        Assert.That(Decoded(TestImages.Png(37, 16, SKColors.Red)).HasTransparency, Is.False);
+    }
+
+    [Test]
+    public void JpegsAreOpaqueWithoutScanning()
+    {
+        var handle = Decoded(TestImages.Jpeg(32, 16, SKColors.Red));
+        Assert.That(handle.HasTransparency, Is.False);
+        Assert.That(handle.Image.AlphaType, Is.EqualTo(SKAlphaType.Opaque));
+    }
+
+    private static ImageHandle Decoded(string path)
+    {
+        using var sut = new ImagePipeline(new SkiaImageDecoder(), 1 << 30, Screen, 1);
+        sut.SetWindow(new[] { path }, false);
+        WaitUntil(() => HasTier(sut, path, ImageTier.Screen));
+        return sut.AcquireBest(path)!;
+    }
+
     private static bool HasTier(ImagePipeline pipeline, string path, ImageTier tier)
     {
         var handle = pipeline.AcquireBest(path);

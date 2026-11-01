@@ -68,6 +68,10 @@ public sealed class ImageDrawOperation : ICustomDrawOperation
     /// </summary>
     private const float MaxShaderShrink = 6;
 
+    private const float CheckerSize = 12;
+    private static readonly SKColor CheckerLight = new(0x80, 0x80, 0x80);
+    private static readonly SKColor CheckerDark = new(0x58, 0x58, 0x58);
+
     private const string DownscaleShader = """
         uniform shader image;
         uniform float spacing;
@@ -85,6 +89,7 @@ public sealed class ImageDrawOperation : ICustomDrawOperation
     private static readonly SKSamplingOptions Linear = new(SKFilterMode.Linear);
     private static readonly SKSamplingOptions Mipmapped = new(SKFilterMode.Linear, SKMipmapMode.Linear);
     private static SKRuntimeShaderBuilder? _shader;
+    private static SKShader? _checkerboard;
 
     private readonly ImageHandle? _image;
     private readonly ImageHandle? _preload;
@@ -140,6 +145,10 @@ public sealed class ImageDrawOperation : ICustomDrawOperation
 
         using (var paint = new SKPaint { Color = _background })
         {
+            if (_image?.HasTransparency == true)
+            {
+                paint.Shader = _checkerboard ??= CreateCheckerboard();
+            }
             canvas.DrawRect(0, 0, (float)Bounds.Width, (float)Bounds.Height, paint);
         }
 
@@ -176,6 +185,21 @@ public sealed class ImageDrawOperation : ICustomDrawOperation
         {
             _textures.Get(_preload, context2, false);
         }
+    }
+
+    /// <summary>
+    /// Two colors repeating. It stays still behind the image, so it doesn't move with zoom or pan.
+    /// </summary>
+    private static SKShader CreateCheckerboard()
+    {
+        using var bitmap = new SKBitmap(2, 2);
+        bitmap.SetPixel(0, 0, CheckerLight);
+        bitmap.SetPixel(1, 1, CheckerLight);
+        bitmap.SetPixel(1, 0, CheckerDark);
+        bitmap.SetPixel(0, 1, CheckerDark);
+        using var image = SKImage.FromBitmap(bitmap);
+        return image.ToShader(SKShaderTileMode.Repeat, SKShaderTileMode.Repeat, new SKSamplingOptions(SKFilterMode.Nearest),
+            SKMatrix.CreateScale(CheckerSize, CheckerSize));
     }
 
     /// <summary>

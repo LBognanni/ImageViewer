@@ -133,7 +133,7 @@ public sealed class ImageSurface : Avalonia.Controls.Control
         }
 
         _frame?.Release();
-        _frame = new ImageHandle(path, ImageTier.Full, image, _image.Source, _image.Background);
+        _frame = new ImageHandle(path, ImageTier.Full, image, _image.Source, _image.Background, _image.HasTransparency);
         InvalidateVisual();
     }
 

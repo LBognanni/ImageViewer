@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Numerics;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 using SkiaSharp;
 
@@ -320,7 +322,39 @@ public sealed class ImagePipeline : IImageWindow, IDisposable
         {
             tier = ImageTier.Full;
         }
-        return new ImageHandle(path, tier, image, decoded.Source, GetEdgeColor(image));
+        return new ImageHandle(path, tier, image, decoded.Source, GetEdgeColor(image), HasTransparency(image));
+    }
+
+    /// <summary>
+    /// Look at every pixel, because corners miss a logo with a hole in it. Images that can't have
+    /// transparency are already marked as opaque, and the others cost about 7 ms at 24 megapixels.
+    /// </summary>
+    private static bool HasTransparency(SKImage image)
+    {
+        if (image.AlphaType == SKAlphaType.Opaque)
+            return false;
+
+        using var pixmap = image.PeekPixels();
+        if (pixmap == null)
+            return false;
+
+        // Alpha is the top byte in both of the platform's pixel formats
+        const uint alphaMask = 0xFF000000;
+        var pixels = pixmap.GetPixelSpan<uint>();
+        var opaque = new Vector<uint>(alphaMask);
+        var blocks = MemoryMarshal.Cast<uint, Vector<uint>>(pixels);
+        foreach (var block in blocks)
+        {
+            if ((block & opaque) != opaque)
+                return true;
+        }
+
+        foreach (var pixel in pixels[(blocks.Length * Vector<uint>.Count)..])
+        {
+            if (pixel < alphaMask)
+                return true;
+        }
+        return false;
     }
 
     private static ImageHandle? LoadBroken(string path)

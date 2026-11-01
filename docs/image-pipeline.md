@@ -98,6 +98,7 @@ A large image drawn from CPU memory costs over 100 ms per frame, so images are d
 
 - **Preloading:** once navigation has been quiet for 150 ms, `ImageSurface` uploads the next file's image, so its first frame is cheap too. It waits for a tier better than `Instant`, which would soon be replaced.
 - **Shrinking:** textures have no mipmaps, which cuts first-draw time by about half. A shader averages samples when shrinking up to 6×, and mipmaps are only built past that.
+- **Transparency:** the view normally fills with a color sampled from the image's edges. If any pixel is transparent, it fills with a checkerboard instead, in the same layer, so window opacity fades both together. Decoder threads find this out by scanning the alpha channel, which takes about 7 ms at 24 megapixels, and formats that can't have alpha skip the scan.
 - **Orientation:** EXIF orientation and rotation are transforms at draw time (`ViewGeometry`), so they never cost pixel work.
 
 ## Failures

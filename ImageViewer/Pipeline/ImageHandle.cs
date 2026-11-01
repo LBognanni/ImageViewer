@@ -18,8 +18,9 @@ public sealed class ImageHandle
 {
     private int _references = 1;
 
-    public ImageHandle(string path, ImageTier tier, SKImage image, ImageInfo source, SKColor background)
+    public ImageHandle(string path, ImageTier tier, SKImage image, ImageInfo source, SKColor background, bool hasTransparency = false)
     {
+        HasTransparency = hasTransparency;
         Path = path;
         Tier = tier;
         Image = image;
@@ -32,6 +33,7 @@ public sealed class ImageHandle
     public SKImage Image { get; }
     public ImageInfo Source { get; }
     public SKColor Background { get; }
+    public bool HasTransparency { get; }
     public long Bytes => (long)Image.Width * Image.Height * 4;
 
     /// <summary>
