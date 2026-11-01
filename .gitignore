@@ -24,6 +24,7 @@ packages
 output
 dist
 temp
+/samples
 /ImageViewer/Properties/launchSettings.json
 /Setup/ImageViewer_Setup.exe
 /vcredist_x64.exe

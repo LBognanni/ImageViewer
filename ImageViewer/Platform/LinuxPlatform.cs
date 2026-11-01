@@ -59,7 +59,10 @@ public sealed class LinuxDefaultViewer : IDefaultViewer
 
     private static readonly string[] MimeTypes =
     {
-        "image/bmp", "image/gif", "image/jpeg", "image/png", "image/webp", "image/vnd.microsoft.icon", "image/vnd.wap.wbmp"
+        "image/bmp", "image/gif", "image/jpeg", "image/png", "image/webp", "image/vnd.microsoft.icon", "image/vnd.wap.wbmp",
+        "image/avif", "image/heic", "image/heif", "image/jp2", "image/jxl", "image/tiff", "image/vnd.adobe.photoshop",
+        "image/x-tga", "image/x-adobe-dng", "image/x-canon-cr2", "image/x-canon-cr3", "image/x-fuji-raf", "image/x-nikon-nef",
+        "image/x-olympus-orf", "image/x-panasonic-rw2", "image/x-pentax-pef", "image/x-sony-arw"
     };
 
     public async Task<string> MakeDefault()

@@ -4,7 +4,7 @@ Fast &amp; private image viewer for Windows, Linux and macOS.
 
 Built for browsing folders of high-resolution pictures: images are decoded to screen size ahead of you as you move through a folder, so the next one is usually ready before you ask for it. Nothing is written to disk about what you've viewed.
 
-Opens BMP, GIF, ICO, JPEG, PNG, WBMP and WebP. Press H in the app to see the keyboard shortcuts.
+Opens the usual web formats, HEIC, AVIF, JPEG XL, JPEG 2000, TIFF, PSD, SVG, EXR, TGA, DDS and dozens more, as well as raw files from all the major camera makers. Raw files open as fast as a JPEG, because the app shows the preview the camera stored in them. Press H in the app to see the keyboard shortcuts.
 
 ## Install
 

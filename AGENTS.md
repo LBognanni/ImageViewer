@@ -62,7 +62,13 @@ Tags have no `v` prefix. `GitHubVersionGetter` parses the tag of the latest rele
 
 `ImageHandle` is a ref-counted lease on the pixels. The render thread can still be drawing after eviction, so never dispose an image directly: use `TryAcquire` and `Release`.
 
-**Decoders (`Decoding/`).** `IImageDecoder` implementations go in the `DecoderChain` built in `Program.Main`, and their extensions become the formats the app lists. `SkiaImageDecoder` is the only one so far. SkiaSharp's libjpeg-turbo has no SIMD, and Magick.NET isn't faster once pixels are in BGRA, so a libjpeg-turbo binding is the known way to get faster JPEG decodes; Magick.NET would add formats, not speed.
+**Decoders (`Decoding/`).** `IImageDecoder` implementations go in the `DecoderChain` built by `Program.CreateDecoder`, and their extensions become the formats the app lists. Each format goes to whichever decoder measures fastest:
+
+- `SkiaImageDecoder` opens what Skia can, and goes first. Magick.NET is slower at all of these, so a format Skia reads stays with Skia. SkiaSharp's libjpeg-turbo has no SIMD, so a libjpeg-turbo binding is the known way to get faster JPEG decodes.
+- `RawImageDecoder` shows the JPEG the camera stored in a raw file, in milliseconds. A develop takes 1 to 13 seconds, so it only runs when `ImageSurface` requests `Full` because the preview is too small for the view. That's only ever the current file, and never happens for previews of at least 90% of the sensor's size. Skia finds the preview in most formats, and `JpegPreviewFinder` covers those it can't read, such as ARW and CR3.
+- `MagickImageDecoder` has the rest. Its native library loads on first use, so it costs nothing at startup or while browsing JPEGs. It's the Q8 build, because the screen only gets 8 bits.
+
+Always give Magick.NET the format and a stream, never a path alone. Left to itself it reads a NEF as a thumbnail-sized TIFF, runs its scripting formats (MVG, MSL) if a file claims to be one, and treats `[` and `:` in paths as instructions. Formats that need Ghostscript or ffmpeg aren't listed, because users may not have them. Don't use `jp2:reduce-factor`: it returns a crop, not a smaller image.
 
 **Rendering (`Viewer/`).** `ImageSurface` holds zoom, pan and rotation, and picks the best image available. `ImageDrawOperation` draws on the render thread through Skia. Images are drawn as GPU textures held by `TextureCache`, because a large image drawn from CPU memory costs over 100ms per frame. Textures have no mipmaps, which cuts first-draw time by about half: a shader averages samples when shrinking up to 6x, and mipmaps are only built past that. `ImageSurface` uploads the next image while idle. EXIF orientation and rotation are transforms at draw time (`ViewGeometry`), never pixel work. Geometry is in physical pixels, so actual size is correct at any display scaling. `MessageOverlay` and `HelpOverlay` are separate controls so that they don't redraw the image.
 

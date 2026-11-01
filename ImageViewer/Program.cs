@@ -24,7 +24,7 @@ static class Program
             return Bench.Run(args[1]);
         }
 
-        var decoder = new DecoderChain(new IImageDecoder[] { new SkiaImageDecoder() });
+        var decoder = CreateDecoder();
 
         var settingsStorage = new SettingsJsonStorage();
         Settings settings;
@@ -62,6 +62,13 @@ static class Program
         pipeline.Dispose();
         return result;
     }
+
+    /// <summary>
+    /// Skia goes first because it's the fastest at everything it can open. Nothing here touches
+    /// ImageMagick's native library until a file needs it, so it adds nothing to startup.
+    /// </summary>
+    public static DecoderChain CreateDecoder() =>
+        new(new IImageDecoder[] { new SkiaImageDecoder(), new RawImageDecoder(), new MagickImageDecoder() });
 
     private static string GetErrorMessage(Exception exception)
     {

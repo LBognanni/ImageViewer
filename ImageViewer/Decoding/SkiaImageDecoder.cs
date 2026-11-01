@@ -11,7 +11,7 @@ public sealed class SkiaImageDecoder : IImageDecoder
 
     public IReadOnlySet<string> Extensions { get; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
-        ".bmp", ".gif", ".ico", ".jpeg", ".jfif", ".jif", ".jpg", ".png", ".wbmp", ".webp"
+        ".bmp", ".gif", ".ico", ".jpe", ".jpeg", ".jfif", ".jif", ".jpg", ".jps", ".mpo", ".pjpeg", ".png", ".wbmp", ".webp"
     };
 
     public ImageInfo? Probe(string path)
@@ -33,8 +33,15 @@ public sealed class SkiaImageDecoder : IImageDecoder
         if (codec == null)
             return null;
 
-        var source = GetInfo(codec);
-        var size = target == null ? codec.Info.Size : GetDecodeSize(codec, source, target.Value);
+        return Decode(codec, GetInfo(codec), target);
+    }
+
+    /// <summary>
+    /// Decode from a codec that's already open, reporting <paramref name="source"/> as the image it came from
+    /// </summary>
+    public static DecodedImage? Decode(SKCodec codec, ImageInfo source, SKSizeI? target)
+    {
+        var size = target == null ? codec.Info.Size : GetDecodeSize(codec, target.Value);
         var info = new SKImageInfo(size.Width, size.Height, SKImageInfo.PlatformColorType, SKAlphaType.Premul);
 
         var bitmap = new SKBitmap(info);
@@ -59,9 +66,9 @@ public sealed class SkiaImageDecoder : IImageDecoder
         return new ImageInfo(full.Width, full.Height, codec.EncodedOrigin, codec.GetScaledDimensions(0.5f) != full);
     }
 
-    private static SKSizeI GetDecodeSize(SKCodec codec, ImageInfo source, SKSizeI target)
+    private static SKSizeI GetDecodeSize(SKCodec codec, SKSizeI target)
     {
-        var needed = FitScale(source.Width, source.Height, target);
+        var needed = FitScale(codec.Info.Width, codec.Info.Height, target);
         foreach (var scale in Scales)
         {
             if (scale >= needed)

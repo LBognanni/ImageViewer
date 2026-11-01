@@ -27,5 +27,6 @@
     <PackageReference Include="Avalonia.Desktop" Version="12.1.4" />
     <PackageReference Include="Avalonia.Skia" Version="12.1.4" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.4" />
+    <PackageReference Include="Magick.NET-Q8-AnyCPU" Version="15.0.0" />
   </ItemGroup>
 </Project>

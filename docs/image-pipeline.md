@@ -47,6 +47,18 @@ Each file can be held at up to three tiers, defined by `ImageTier`:
 
 Some formats have no cheap way to decode at a smaller size. The first probe records this for the file, and its `Instant` work becomes a `Screen` decode. An image decoded at its own size always counts as `Full`, whatever was requested.
 
+## Formats
+
+`DecoderChain` tries the decoder that claims the file's extension first, and the others after it, so a file with the wrong extension still opens.
+
+| Decoder | Formats | Cheap scaling |
+|---|---|---|
+| `SkiaImageDecoder` | JPEG, PNG, WebP, GIF, BMP, ICO, WBMP | JPEG and WebP |
+| `RawImageDecoder` | Camera raw | Yes, through the JPEG preview |
+| `MagickImageDecoder` | Everything else, such as HEIC, AVIF, JPEG XL, JPEG 2000, TIFF and PSD | No |
+
+Developing a raw file takes seconds, so the camera's JPEG preview stands in for it: it serves `Instant` and `Screen` for every file, even when it's smaller than the screen. If the preview is too small for the view, `ImageSurface` requests `Full` as it would for a zoom, and that develops the current file only. Prefetching never develops anything, unless images open at actual size. A preview of at least 90% of the sensor's size is treated as the full image, and never developed.
+
 ## From keypress to image
 
 1. `Navigator` moves to the new file and calls `SetWindow` with a priority list.

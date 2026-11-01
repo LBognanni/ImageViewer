@@ -16,7 +16,7 @@ static class Bench
 
     public static int Run(string folder)
     {
-        var decoder = new DecoderChain(new IImageDecoder[] { new SkiaImageDecoder() });
+        var decoder = Program.CreateDecoder();
 
         var sw = Stopwatch.StartNew();
         var files = Navigator.ListFolder(folder, decoder.Extensions).Result;
