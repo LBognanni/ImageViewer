@@ -19,7 +19,7 @@ public sealed class MessageDialog : Window
         CanResize = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
 
-        var ok = new Button { Content = "Ok", IsDefault = true, MinWidth = 80 };
+        var ok = new Button { Content = "Ok", IsDefault = true, MinWidth = 80, HorizontalContentAlignment = HorizontalAlignment.Center };
         ok.Click += (_, _) => Close(true);
 
         var buttons = new StackPanel
@@ -31,7 +31,7 @@ public sealed class MessageDialog : Window
         };
         if (canCancel)
         {
-            var cancel = new Button { Content = "Cancel", IsCancel = true, MinWidth = 80 };
+            var cancel = new Button { Content = "Cancel", IsCancel = true, MinWidth = 80, HorizontalContentAlignment = HorizontalAlignment.Center };
             cancel.Click += (_, _) => Close(false);
             buttons.Children.Add(cancel);
         }
@@ -56,13 +56,19 @@ public sealed class MessageDialog : Window
 
 public sealed class SettingsDialog : Window
 {
-    public SettingsDialog(ISettingsStorage settingsStorage, Settings settings, IDefaultViewer defaultViewer)
+    /// <param name="settingsStorage">Where to save the settings</param>
+    /// <param name="settings">The settings to edit</param>
+    /// <param name="defaultViewer">Makes this the system's image viewer</param>
+    /// <param name="openUri">Opens links, or null to use the system browser</param>
+    public SettingsDialog(ISettingsStorage settingsStorage, Settings settings, IDefaultViewer defaultViewer,
+        Func<Uri, Task<bool>>? openUri = null)
     {
         App.EnsureDialogTheme();
 
         Title = "Preferences";
-        Width = 420;
-        SizeToContent = SizeToContent.Height;
+        Width = 460;
+        // A fixed height, so that the window doesn't jump between tabs
+        Height = 430;
         CanResize = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
 
@@ -87,7 +93,7 @@ public sealed class SettingsDialog : Window
             }
         };
 
-        var ok = new Button { Content = "Ok", IsDefault = true, MinWidth = 80 };
+        var ok = new Button { Content = "Ok", IsDefault = true, MinWidth = 80, HorizontalContentAlignment = HorizontalAlignment.Center };
         ok.Click += async (_, _) =>
         {
             settings.StartInFullScreen = fullScreen.IsChecked == true;
@@ -96,12 +102,12 @@ public sealed class SettingsDialog : Window
             Close(true);
         };
 
-        var cancel = new Button { Content = "Cancel", IsCancel = true, MinWidth = 80 };
+        var cancel = new Button { Content = "Cancel", IsCancel = true, MinWidth = 80, HorizontalContentAlignment = HorizontalAlignment.Center };
         cancel.Click += (_, _) => Close(false);
 
-        Content = new StackPanel
+        var general = new StackPanel
         {
-            Margin = new Thickness(16),
+            Margin = new Thickness(0, 12),
             Spacing = 12,
             Children =
             {
@@ -116,14 +122,36 @@ public sealed class SettingsDialog : Window
                         zoom
                     }
                 },
-                makeDefault,
-                new StackPanel
+                makeDefault
+            }
+        };
+
+        var about = new AboutPanel(openUri ?? (uri => Launcher.LaunchUriAsync(uri)), AboutPanel.RunningVersion) { Margin = new Thickness(0, 12) };
+
+        var buttons = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Spacing = 8,
+            Children = { ok, cancel }
+        };
+        Grid.SetRow(buttons, 1);
+
+        Content = new Grid
+        {
+            Margin = new Thickness(16),
+            RowDefinitions = new RowDefinitions("*,Auto"),
+            Children =
+            {
+                new TabControl
                 {
-                    Orientation = Orientation.Horizontal,
-                    HorizontalAlignment = HorizontalAlignment.Right,
-                    Spacing = 8,
-                    Children = { ok, cancel }
-                }
+                    Items =
+                    {
+                        new TabItem { Header = "General", Content = general },
+                        new TabItem { Header = "About", Content = about }
+                    }
+                },
+                buttons
             }
         };
     }

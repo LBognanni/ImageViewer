@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Styling;
 using Avalonia.Themes.Fluent;
@@ -53,8 +54,26 @@ public sealed class App : Application, IUpdateNotifier
 
         _dialogThemeLoaded = true;
         Current.RequestedThemeVariant = ThemeVariant.Dark;
-        Current.Styles.Add(new FluentTheme());
+        Current.Styles.Add(CreateDialogTheme());
     }
+
+    /// <summary>
+    /// Fluent's dark theme is white on pure black, which is harsh in a small window
+    /// </summary>
+    public static FluentTheme CreateDialogTheme() => new()
+    {
+        Palettes =
+        {
+            [ThemeVariant.Dark] = new ColorPaletteResources
+            {
+                Accent = Color.Parse("#5B9BD5"),
+                RegionColor = Color.Parse("#202225"),
+                AltMediumLow = Color.Parse("#2C2F33"),
+                BaseHigh = Color.Parse("#E4E6E9"),
+                BaseMedium = Color.Parse("#A3A7AD")
+            }
+        }
+    };
 
     public override void OnFrameworkInitializationCompleted()
     {
