@@ -1,0 +1,51 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="ImageViewer.AboutPanel">
+  <UserControl.Styles>
+    <!-- Tooltips wrap at 320 pixels by default, which splits the longer links -->
+    <Style Selector="ToolTip">
+      <Setter Property="MaxWidth" Value="Infinity" />
+    </Style>
+    <Style Selector="TextBlock.secondary">
+      <Setter Property="Opacity" Value="0.7" />
+    </Style>
+  </UserControl.Styles>
+
+  <StackPanel Spacing="12">
+    <StackPanel Orientation="Horizontal" Spacing="16">
+      <Image x:Name="Logo" Width="96" Height="96" />
+      <StackPanel Spacing="4" VerticalAlignment="Center">
+        <TextBlock Text="Image Viewer" FontSize="24" FontWeight="SemiBold" />
+        <TextBlock Classes="secondary" Text="Fast and private image viewer" />
+        <TextBlock Classes="secondary" x:Name="VersionLabel" />
+      </StackPanel>
+    </StackPanel>
+
+    <TextBlock Classes="secondary" TextWrapping="Wrap"
+               Text="© Loris Bognanni. Image Viewer is free software under the GPLv3. If you find it useful, please consider donating." />
+
+    <Button Content="☕ Buy me a coffee" Foreground="#223B36" Background="#FFDD65"
+            Tag="https://buymeacoffee.com/codemade" ToolTip.Tip="{Binding $self.Tag}" Click="OnLinkClick">
+      <Button.Resources>
+        <!-- The theme swaps these in for the hover and pressed states, whatever the button's own colors -->
+        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FFE786" />
+        <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#F1CB43" />
+        <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#223B36" />
+        <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#223B36" />
+      </Button.Resources>
+    </Button>
+
+    <WrapPanel>
+      <HyperlinkButton Content="GitHub" Tag="https://github.com/LBognanni/ImageViewer"
+                       ToolTip.Tip="{Binding $self.Tag}" Click="OnLinkClick" />
+      <HyperlinkButton Content="Report an issue" Tag="https://github.com/LBognanni/ImageViewer/issues"
+                       ToolTip.Tip="{Binding $self.Tag}" Click="OnLinkClick" />
+      <HyperlinkButton Content="Releases" Tag="https://github.com/LBognanni/ImageViewer/releases"
+                       ToolTip.Tip="{Binding $self.Tag}" Click="OnLinkClick" />
+      <HyperlinkButton Content="codemade.net" Tag="https://codemade.net/"
+                       ToolTip.Tip="{Binding $self.Tag}" Click="OnLinkClick" />
+    </WrapPanel>
+
+    <SelectableTextBlock x:Name="Error" TextWrapping="Wrap" Foreground="Orange" IsVisible="False" />
+  </StackPanel>
+</UserControl>

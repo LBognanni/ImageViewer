@@ -1,0 +1,36 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ImageViewer"
+        x:Class="ImageViewer.SettingsDialog"
+        Title="Preferences"
+        Width="460"
+        Height="430"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner">
+  <!-- A fixed height, so that the window doesn't jump between tabs -->
+  <Grid Margin="16" RowDefinitions="*,Auto">
+    <TabControl>
+      <TabItem Header="General">
+        <StackPanel Margin="0,12" Spacing="12">
+          <CheckBox x:Name="FullScreen" Content="Start in full screen" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="Default zoom:" VerticalAlignment="Center" />
+            <ComboBox x:Name="Zoom" MinWidth="160">
+              <ComboBoxItem Content="Fit to screen" />
+              <ComboBoxItem Content="Actual size" />
+            </ComboBox>
+          </StackPanel>
+          <Button x:Name="MakeDefault" Content="Set as default image viewer" />
+        </StackPanel>
+      </TabItem>
+      <TabItem Header="About">
+        <local:AboutPanel x:Name="About" Margin="0,12" />
+      </TabItem>
+    </TabControl>
+
+    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button x:Name="Ok" Content="Ok" IsDefault="True" MinWidth="80" HorizontalContentAlignment="Center" />
+      <Button x:Name="Cancel" Content="Cancel" IsCancel="True" MinWidth="80" HorizontalContentAlignment="Center" />
+    </StackPanel>
+  </Grid>
+</Window>

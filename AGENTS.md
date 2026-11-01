@@ -97,7 +97,7 @@ Saved settings replace the default bindings entirely, so users with an existing 
 ## Conventions
 
 - Dependencies are constructor-injected through interfaces so logic can be tested with Moq; `Program.Main` is the composition root.
-- Everything must work under Native AOT: no reflection-based JSON (add types to `AppJsonContext`) and no XAML loaded at runtime. Windows are built in code.
+- Everything must work under Native AOT: no reflection-based JSON (add types to `AppJsonContext`) and no XAML loaded at runtime. Dialogs use AXAML, which is compiled at build time, so never call the runtime loader. The main window draws everything itself and stays in code.
 - `Pipeline/` and `Navigator` must stay free of Avalonia types.
 - Nullable reference types are enabled in `ImageViewer`.
 - `ImageViewer.Tests/testimages` holds fixture images copied to the test output directory.

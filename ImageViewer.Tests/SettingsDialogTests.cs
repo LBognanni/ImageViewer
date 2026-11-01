@@ -94,10 +94,10 @@ public class SettingsDialogTests
     }
 
     [AvaloniaTest]
-    public void ShowsTheVersion()
+    public void ShowsTheRunningVersion()
     {
-        var panel = new AboutPanel(_ => Task.FromResult(true), new Version(2, 1, 3, 0));
-        Assert.That(panel.GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text), Does.Contain("Version 2.1.3"));
+        var panel = new AboutPanel();
+        Assert.That(panel.GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text), Does.Contain(AppVersion.Describe(AppVersion.Running)));
     }
 
     [AvaloniaTest]
@@ -105,9 +105,15 @@ public class SettingsDialogTests
     {
         Open();
         ShowAbout();
-        var tip = (ToolTip)ToolTip.GetTip(Button("Report an issue"))!;
+        var link = Button("Report an issue");
+        Assert.That(ToolTip.GetTip(link), Is.EqualTo("https://github.com/LBognanni/ImageViewer/issues"));
+
+        var tip = new ToolTip { Content = ToolTip.GetTip(link) };
+        ToolTip.SetTip(link, tip);
+        ToolTip.SetIsOpen(link, true);
+        Pump();
         Assert.That(tip.MaxWidth, Is.EqualTo(double.PositiveInfinity));
-        Assert.That(((TextBlock)tip.Content!).TextWrapping, Is.EqualTo(Avalonia.Media.TextWrapping.NoWrap));
+        ToolTip.SetIsOpen(link, false);
     }
 
     [AvaloniaTest]
