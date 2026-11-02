@@ -251,10 +251,35 @@ public class ViewerWindowTests
         Assert.That(_sut.Topmost, Is.True);
 
         Press(PhysicalKey.Escape);
-        Assert.That(_sut.WindowState, Is.EqualTo(WindowState.Maximized));
+        Assert.That(_sut.WindowState, Is.EqualTo(WindowState.Normal));
         Assert.That(_sut.Topmost, Is.False);
         Assert.That(_sut.IsVisible, Is.True);
 
+        Press(PhysicalKey.Escape);
+        Assert.That(_sut.IsVisible, Is.False);
+    }
+
+    [AvaloniaTest]
+    public void LeavingFullScreen_RestoresTheWindowAsItWas()
+    {
+        Open();
+        foreach (var (state, topmost) in new[] { (WindowState.Normal, false), (WindowState.Maximized, false), (WindowState.Normal, true) })
+        {
+            _sut.WindowState = state;
+            _sut.Topmost = topmost;
+
+            Press(PhysicalKey.F);
+            Press(PhysicalKey.F);
+            Assert.That(_sut.WindowState, Is.EqualTo(state));
+            Assert.That(_sut.Topmost, Is.EqualTo(topmost));
+        }
+    }
+
+    [AvaloniaTest]
+    public void Escape_ClosesAWindowThatIsOnlyOnTop()
+    {
+        Open();
+        Press(PhysicalKey.T);
         Press(PhysicalKey.Escape);
         Assert.That(_sut.IsVisible, Is.False);
     }

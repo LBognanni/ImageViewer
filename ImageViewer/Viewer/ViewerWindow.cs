@@ -40,6 +40,8 @@ public sealed class ViewerWindow : Window
 
     private DispatcherTimer? _autoPlayTimer;
     private bool _isClickThrough;
+    private WindowState _windowedState;
+    private bool _windowedTopmost;
     private bool _isDeleting;
     private string? _updateMessage;
     private string? _updateUrl;
@@ -137,7 +139,7 @@ public sealed class ViewerWindow : Window
         // ImageSurface paints the whole window, so anything here would show through when it fades
         Background = null;
         TransparencyLevelHint = new[] { WindowTransparencyLevel.Transparent };
-        WindowStartupLocation = WindowStartupLocation.CenterScreen;
+        // No startup location, so the system places the window, normally on the monitor in use
 
         _surface = new ImageSurface(pipeline) { DefaultZoom = settings.DefaultZoom };
         _player = new AnimationPlayer(_surface.ShowFrame);
@@ -474,7 +476,7 @@ public sealed class ViewerWindow : Window
         {
             _help.Hide();
         }
-        else if (Topmost)
+        else if (IsFullScreen)
         {
             ToggleFullScreen();
         }
@@ -486,7 +488,7 @@ public sealed class ViewerWindow : Window
 
     private async void ShowPreferences()
     {
-        if (Topmost)
+        if (IsFullScreen)
         {
             ToggleFullScreen();
         }
@@ -594,16 +596,20 @@ public sealed class ViewerWindow : Window
         }
     }
 
+    private bool IsFullScreen => WindowState == WindowState.FullScreen;
+
     private void ToggleFullScreen()
     {
-        if (Topmost)
+        if (IsFullScreen)
         {
-            Topmost = false;
-            WindowDecorations = WindowDecorations.Full;
-            WindowState = WindowState.Maximized;
+            // Back to how the window was, rather than always maximized
+            Topmost = _windowedTopmost;
+            WindowState = _windowedState;
         }
         else
         {
+            _windowedState = WindowState;
+            _windowedTopmost = Topmost;
             WindowState = WindowState.FullScreen;
             Topmost = true;
         }
