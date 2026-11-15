@@ -8,6 +8,7 @@ using Avalonia.Headless;
 using Avalonia.Headless.NUnit;
 using Avalonia.Input;
 using Avalonia.LogicalTree;
+using Avalonia.Media;
 using Avalonia.Themes.Fluent;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -113,6 +114,10 @@ public class SettingsDialogTests
         ToolTip.SetIsOpen(link, true);
         Pump();
         Assert.That(tip.MaxWidth, Is.EqualTo(double.PositiveInfinity));
+        // Fractional display scaling can make the popup a fraction of a pixel narrower than the text,
+        // and the last word would wrap onto a line that's cut off
+        var text = tip.GetVisualDescendants().OfType<TextBlock>().Single();
+        Assert.That(text.TextWrapping, Is.EqualTo(TextWrapping.NoWrap));
         ToolTip.SetIsOpen(link, false);
     }
 

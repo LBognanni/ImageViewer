@@ -11,17 +11,28 @@
   <Grid Margin="16" RowDefinitions="*,Auto">
     <TabControl>
       <TabItem Header="General">
-        <StackPanel Margin="0,12" Spacing="12">
-          <CheckBox x:Name="FullScreen" Content="Start in full screen" />
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <TextBlock Text="Default zoom:" VerticalAlignment="Center" />
-            <ComboBox x:Name="Zoom" MinWidth="160">
-              <ComboBoxItem Content="Fit to screen" />
-              <ComboBoxItem Content="Actual size" />
-            </ComboBox>
-          </StackPanel>
-          <Button x:Name="MakeDefault" Content="Set as default image viewer" />
-        </StackPanel>
+        <!-- Labels in one column and controls in the other, which is as wide as the widest control,
+             so the left and right edges of the controls line up -->
+        <Grid Margin="0,16" ColumnDefinitions="Auto,Auto" RowDefinitions="Auto,Auto,Auto"
+              ColumnSpacing="16" RowSpacing="12" HorizontalAlignment="Left">
+          <Grid.Styles>
+            <Style Selector="Grid > TextBlock">
+              <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+          </Grid.Styles>
+
+          <TextBlock Text="Window" />
+          <CheckBox x:Name="FullScreen" Grid.Column="1" Content="Start in full screen" />
+
+          <TextBlock Grid.Row="1" Text="Default zoom" />
+          <ComboBox x:Name="Zoom" Grid.Row="1" Grid.Column="1" HorizontalAlignment="Stretch">
+            <ComboBoxItem Content="Fit to screen" />
+            <ComboBoxItem Content="Actual size" />
+          </ComboBox>
+
+          <Button x:Name="MakeDefault" Grid.Row="2" Grid.Column="1" HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center" Content="Set as default image viewer" />
+        </Grid>
       </TabItem>
       <TabItem Header="About">
         <local:AboutPanel x:Name="About" Margin="0,12" />

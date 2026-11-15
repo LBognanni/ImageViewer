@@ -2,9 +2,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="ImageViewer.AboutPanel">
   <UserControl.Styles>
-    <!-- Tooltips wrap at 320 pixels by default, which splits the longer links -->
+    <!-- Tooltips wrap at 320 pixels by default, which splits the longer links. They also wrap when the
+         popup is a fraction of a pixel narrower than the text, as it is when fractional display scaling
+         rounds the window size down, and the line the last word wraps onto is cut off. -->
     <Style Selector="ToolTip">
       <Setter Property="MaxWidth" Value="Infinity" />
+    </Style>
+    <Style Selector="ToolTip TextBlock">
+      <Setter Property="TextWrapping" Value="NoWrap" />
     </Style>
     <Style Selector="TextBlock.secondary">
       <Setter Property="Opacity" Value="0.7" />
